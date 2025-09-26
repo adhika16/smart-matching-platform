@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -54,7 +56,7 @@ class User extends Authenticatable
     /**
      * Get the creative profile associated with the user.
      */
-    public function creativeProfile()
+    public function creativeProfile(): HasOne
     {
         return $this->hasOne(CreativeProfile::class);
     }
@@ -62,9 +64,17 @@ class User extends Authenticatable
     /**
      * Get the opportunity owner profile associated with the user.
      */
-    public function opportunityOwnerProfile()
+    public function opportunityOwnerProfile(): HasOne
     {
         return $this->hasOne(OpportunityOwnerProfile::class);
+    }
+
+    /**
+     * Get the jobs posted by the opportunity owner.
+     */
+    public function jobs(): HasMany
+    {
+        return $this->hasMany(Job::class);
     }
 
     /**

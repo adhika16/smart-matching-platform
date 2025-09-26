@@ -1,0 +1,169 @@
+import JobController from '@/actions/App/Http/Controllers/JobController';
+import { archive as archiveRoute, index as jobsIndex, publish as publishRoute } from '@/routes/opportunity-owner/jobs';
+import { Form, Head, Link } from '@inertiajs/react';
+import type { ReactNode } from 'react';
+
+import JobForm, { type JobFormValues } from '@/components/jobs/job-form';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import AppLayout from '@/layouts/app-layout';
+
+interface EditJobProps {
+    job: JobFormValues & {
+        id: number;
+        status: 'draft' | 'published' | 'archived';
+        published_at?: string | null;
+    };
+    compensationTypes: Array<{ value: string; label: string }>;
+}
+
+const statusCopy: Record<'draft' | 'published' | 'archived', { label: string; description: string; badge: 'outline' | 'default' | 'secondary' }> = {
+    draft: {
+        label: 'Draft',
+        description: 'Your job is not visible to creatives yet. Publish when you are ready.',
+        badge: 'outline',
+    },
+    published: {
+        label: 'Published',
+        description: 'Creatives can view and apply to this job.',
+        badge: 'default',
+    },
+    archived: {
+        label: 'Archived',
+        description: 'This job is hidden from creatives but remains in your records.',
+        badge: 'secondary',
+    },
+};
+
+export default function Edit({ job, compensationTypes }: EditJobProps) {
+    return (
+        <AppLayout>
+            <Head title={`Edit job · ${job.title}`} />
+
+            <div className="container mx-auto max-w-4xl space-y-8 py-8">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h1 className="text-3xl font-semibold">Edit job</h1>
+                        <p className="text-muted-foreground">
+                            Update details, publish changes, or archive this opportunity.
+                        </p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button asChild variant="outline">
+                            <Link href={jobsIndex().url}>Back to jobs</Link>
+                        </Button>
+                        <DangerButton
+                            route={JobController.destroy(job.id).url}
+                            method="delete"
+                            confirm
+                        >
+                            Delete job
+                        </DangerButton>
+                    </div>
+                </div>
+
+                <Card>
+                    <CardHeader className="flex flex-col gap-2">
+                        <CardTitle className="flex items-center gap-3">
+                            <span>Job status</span>
+                            <Badge variant={statusCopy[job.status].badge}>{statusCopy[job.status].label}</Badge>
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                            {statusCopy[job.status].description}
+                        </p>
+                        {job.published_at && (
+                            <p className="text-xs text-muted-foreground">
+                                Published {new Date(job.published_at).toLocaleString()}
+                            </p>
+                        )}
+                    </CardHeader>
+                </Card>
+
+                {job.status !== 'published' ? (
+                    <QuickActionCard
+                        title="Ready to go live?"
+                        description="Publish this opportunity so creatives can discover it."
+                        actionLabel="Publish now"
+                        actionRoute={publishRoute(job.id).url}
+                        method="patch"
+                    />
+                ) : (
+                    <QuickActionCard
+                        title="Need to pause applications?"
+                        description="Archive the job to hide it from creatives while keeping it for reference."
+                        actionLabel="Archive job"
+                        actionRoute={archiveRoute(job.id).url}
+                        method="patch"
+                        variant="outline"
+                    />
+                )}
+
+                <JobForm
+                    action={JobController.update(job.id).url}
+                    method="put"
+                    job={job}
+                    compensationTypes={compensationTypes}
+                    submitLabels={{
+                        draft: job.status === 'published' ? 'Save as draft' : 'Save draft',
+                        publish: job.status === 'published' ? 'Update & republish' : 'Save & publish',
+                    }}
+                />
+            </div>
+        </AppLayout>
+    );
+}
+
+interface QuickActionCardProps {
+    title: string;
+    description: string;
+    actionLabel: string;
+    actionRoute: string;
+    method: 'patch';
+    variant?: 'default' | 'outline';
+}
+
+function QuickActionCard({ title, description, actionLabel, actionRoute, method, variant = 'default' }: QuickActionCardProps) {
+    return (
+        <Card>
+            <CardContent className="flex flex-col gap-4 py-6 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h2 className="text-lg font-semibold">{title}</h2>
+                    <p className="text-sm text-muted-foreground">{description}</p>
+                </div>
+                <Form action={actionRoute} method={method} className="md:w-auto">
+                    {({ processing }) => (
+                        <Button type="submit" variant={variant} disabled={processing}>
+                            {processing ? 'Processing…' : actionLabel}
+                        </Button>
+                    )}
+                </Form>
+            </CardContent>
+        </Card>
+    );
+}
+
+interface DangerButtonProps {
+    route: string;
+    method: 'delete';
+    children: ReactNode;
+    confirm?: boolean;
+}
+
+function DangerButton({ route, method, children, confirm = false }: DangerButtonProps) {
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        if (confirm && !window.confirm('This will permanently delete the job. Continue?')) {
+            event.preventDefault();
+        }
+    };
+
+    return (
+        <Form action={route} method={method} onSubmit={handleSubmit}>
+            {({ processing }) => (
+                <Button type="submit" variant="destructive" disabled={processing}>
+                    {processing ? 'Deleting…' : children}
+                </Button>
+            )}
+        </Form>
+    );
+}

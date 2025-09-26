@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { Building2, Users, CheckCircle2, Settings, Plus } from 'lucide-react';
+import { create as jobsCreateRoute, index as jobsIndexRoute } from '@/routes/opportunity-owner/jobs';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +26,11 @@ interface OpportunityOwnerProps {
     completionScore: number;
     profileComplete: boolean;
     isVerified: boolean;
+    jobStats: {
+        published: number;
+        draft: number;
+        archived: number;
+    };
 }
 
 export default function OpportunityOwner({
@@ -32,7 +38,8 @@ export default function OpportunityOwner({
     profile,
     completionScore,
     profileComplete,
-    isVerified
+    isVerified,
+    jobStats
 }: OpportunityOwnerProps) {
     return (
         <AppLayout>
@@ -92,9 +99,11 @@ export default function OpportunityOwner({
                             <Plus className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">0</div>
+                            <div className="text-2xl font-bold">{jobStats.published}</div>
                             <p className="text-xs text-muted-foreground mt-2">
-                                No active opportunities yet
+                                {jobStats.published === 0
+                                    ? 'No active opportunities yet'
+                                    : `${jobStats.published} currently live`}
                             </p>
                         </CardContent>
                     </Card>
@@ -131,13 +140,29 @@ export default function OpportunityOwner({
                                 </Link>
                             </Button>
 
-                            <Button
-                                variant="outline"
-                                className="w-full justify-start"
-                                disabled={!profileComplete}
-                            >
-                                <Plus className="mr-2 h-4 w-4" />
-                                Post Opportunity (Coming Soon)
+                            {profileComplete ? (
+                                <Button asChild className="w-full justify-start">
+                                    <Link href={jobsCreateRoute().url}>
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        Post a job
+                                    </Link>
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant="outline"
+                                    className="w-full justify-start"
+                                    disabled
+                                >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Complete profile to post jobs
+                                </Button>
+                            )}
+
+                            <Button asChild variant="outline" className="w-full justify-start">
+                                <Link href={jobsIndexRoute().url}>
+                                    <Users className="mr-2 h-4 w-4" />
+                                    Manage jobs
+                                </Link>
                             </Button>
 
                             <Button variant="outline" className="w-full justify-start" disabled>

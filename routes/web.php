@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CreativeDashboardController;
+use App\Http\Controllers\JobController;
 use App\Http\Controllers\OpportunityOwnerDashboardController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +26,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Opportunity Owner routes
     Route::middleware('user.type:opportunity_owner')->group(function () {
         Route::get('dashboard/opportunity-owner', [OpportunityOwnerDashboardController::class, 'index'])->name('dashboard.opportunity-owner');
+
+        Route::prefix('opportunity-owner')->name('opportunity-owner.')->group(function () {
+            Route::patch('jobs/{job}/publish', [JobController::class, 'publish'])->name('jobs.publish');
+            Route::patch('jobs/{job}/archive', [JobController::class, 'archive'])->name('jobs.archive');
+            Route::resource('jobs', JobController::class)->except(['show']);
+        });
     });
 
     // Redirect dashboard to appropriate user type dashboard
