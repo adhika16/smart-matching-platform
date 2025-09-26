@@ -1,13 +1,14 @@
 import RegisteredUserController from '@/actions/App/Http/Controllers/Auth/RegisteredUserController';
 import { login } from '@/routes';
 import { Form, Head } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, Users, Briefcase } from 'lucide-react';
 
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import AuthLayout from '@/layouts/auth-layout';
 
 export default function Register() {
@@ -26,7 +27,34 @@ export default function Register() {
                 {({ processing, errors }) => (
                     <>
                         <div className="grid gap-6">
-                            <div className="grid gap-2">
+                            <div className="grid gap-4">
+                                <Label>I want to join as a...</Label>
+                                <RadioGroup name="user_type" className="grid grid-cols-2 gap-4">
+                                    <div className="flex items-center space-x-2 rounded-lg border p-4 hover:bg-accent">
+                                        <RadioGroupItem value="creative" id="creative" />
+                                        <Label htmlFor="creative" className="flex flex-col cursor-pointer">
+                                            <div className="flex items-center gap-2">
+                                                <Users className="h-4 w-4" />
+                                                <span className="font-medium">Creative</span>
+                                            </div>
+                                            <span className="text-sm text-muted-foreground">Looking for opportunities</span>
+                                        </Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2 rounded-lg border p-4 hover:bg-accent">
+                                        <RadioGroupItem value="opportunity_owner" id="opportunity_owner" />
+                                        <Label htmlFor="opportunity_owner" className="flex flex-col cursor-pointer">
+                                            <div className="flex items-center gap-2">
+                                                <Briefcase className="h-4 w-4" />
+                                                <span className="font-medium">Opportunity Owner</span>
+                                            </div>
+                                            <span className="text-sm text-muted-foreground">Posting opportunities</span>
+                                        </Label>
+                                    </div>
+                                </RadioGroup>
+                                <InputError message={errors.user_type} />
+                            </div>
+
+                            <div className="grid gap-2">#
                                 <Label htmlFor="name">Name</Label>
                                 <Input
                                     id="name"

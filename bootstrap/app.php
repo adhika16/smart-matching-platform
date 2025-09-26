@@ -21,6 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
+
+        $middleware->alias([
+            'user.type' => \App\Http\Middleware\EnsureUserType::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

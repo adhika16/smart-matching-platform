@@ -34,18 +34,30 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'user_type' => 'required|string|in:creative,opportunity_owner',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'user_type' => $request->user_type,
         ]);
+
+        // Create the appropriate profile based on user type
+        if ($user->isCreative()) {
+            $user->creativeProfile()->create([]);
+        } else {
+            $user->opportunityOwnerProfile()->create([
+                'company_name' => '', // Will be filled in profile setup
+            ]);
+        }
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Redirect to profile setup instead of dashboard
+        return redirect()->route('profile.setup');
     }
 }
