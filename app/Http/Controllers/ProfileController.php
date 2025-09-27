@@ -48,8 +48,10 @@ class ProfileController extends Controller
             'location' => 'nullable|string|max:100',
             'hourly_rate' => 'nullable|numeric|min:0',
             'experience_level' => 'nullable|in:beginner,intermediate,expert',
-            'available_for_work' => 'boolean',
+            'available_for_work' => 'nullable|boolean',
         ]);
+
+        $validated['available_for_work'] = $request->boolean('available_for_work');
 
         $user->creativeProfile()->updateOrCreate(
             ['user_id' => $user->id],

@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Admin\OpportunityOwnerVerificationController;
+use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\CreativeDashboardController;
+use App\Http\Controllers\JobBrowseController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\OpportunityOwnerDashboardController;
 use App\Http\Controllers\ProfileController;
@@ -22,6 +24,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Creative routes
     Route::middleware('user.type:creative')->group(function () {
         Route::get('dashboard/creative', [CreativeDashboardController::class, 'index'])->name('dashboard.creative');
+
+        Route::prefix('creative')->name('creative.')->group(function () {
+            Route::get('jobs', [JobBrowseController::class, 'index'])->name('jobs.index');
+            Route::get('jobs/{job:slug}', [JobBrowseController::class, 'show'])->name('jobs.show');
+            Route::post('jobs/{job:slug}/applications', [ApplicationController::class, 'store'])->name('jobs.apply');
+        });
     });
 
     // Opportunity Owner routes
@@ -31,6 +39,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::prefix('opportunity-owner')->name('opportunity-owner.')->group(function () {
             Route::patch('jobs/{job}/publish', [JobController::class, 'publish'])->name('jobs.publish');
             Route::patch('jobs/{job}/archive', [JobController::class, 'archive'])->name('jobs.archive');
+            Route::patch('jobs/{job}/applications/{application}', [ApplicationController::class, 'update'])->name('jobs.applications.update');
             Route::resource('jobs', JobController::class)->except(['show']);
         });
     });

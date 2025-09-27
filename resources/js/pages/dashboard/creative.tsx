@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
+import creativeRoutes from '@/routes/creative';
 
 interface CreativeProps {
     user: {
@@ -23,9 +24,46 @@ interface CreativeProps {
     };
     completionScore: number;
     profileComplete: boolean;
+    stats?: {
+        activeApplications: number;
+        shortlistedApplications: number;
+    };
+    recentApplications?: {
+        id: number;
+        status: string;
+        applied_at?: string | null;
+        job?: {
+            title?: string | null;
+            slug?: string | null;
+        } | null;
+    }[];
 }
 
-export default function Creative({ user, profile, completionScore, profileComplete }: CreativeProps) {
+export default function Creative({
+    user,
+    profile,
+    completionScore,
+    profileComplete,
+    stats = { activeApplications: 0, shortlistedApplications: 0 },
+    recentApplications = [],
+}: CreativeProps) {
+    const statusLabel: Record<string, string> = {
+        pending: 'Pending review',
+        shortlisted: 'Shortlisted',
+        rejected: 'Not selected',
+    };
+
+    const statusVariant = (status: string) => {
+        switch (status) {
+            case 'shortlisted':
+                return 'default' as const;
+            case 'rejected':
+                return 'outline' as const;
+            default:
+                return 'secondary' as const;
+        }
+    };
+
     return (
         <AppLayout>
             <Head title="Creative Dashboard" />
@@ -65,9 +103,11 @@ export default function Creative({ user, profile, completionScore, profileComple
                             <Search className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">0</div>
+                            <div className="text-2xl font-bold">{stats.activeApplications}</div>
                             <p className="text-xs text-muted-foreground mt-2">
-                                No active applications yet
+                                {stats.activeApplications === 0
+                                    ? 'No active applications yet'
+                                    : 'Pending or shortlisted opportunities in progress'}
                             </p>
                         </CardContent>
                     </Card>
@@ -75,14 +115,16 @@ export default function Creative({ user, profile, completionScore, profileComple
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">
-                                Profile Views
+                                Shortlisted Applications
                             </CardTitle>
                             <Star className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">0</div>
+                            <div className="text-2xl font-bold">{stats.shortlistedApplications}</div>
                             <p className="text-xs text-muted-foreground mt-2">
-                                Views this month
+                                {stats.shortlistedApplications === 0
+                                    ? 'Waiting for responses from opportunity owners'
+                                    : 'Great news! You have shortlisted applications to review'}
                             </p>
                         </CardContent>
                     </Card>
@@ -109,9 +151,11 @@ export default function Creative({ user, profile, completionScore, profileComple
                                 Upload Portfolio (Coming Soon)
                             </Button>
 
-                            <Button variant="outline" className="w-full justify-start" disabled>
-                                <Search className="mr-2 h-4 w-4" />
-                                Browse Opportunities (Coming Soon)
+                            <Button variant="outline" className="w-full justify-start" asChild>
+                                <Link href={creativeRoutes.jobs.index.url()}>
+                                    <Search className="mr-2 h-4 w-4" />
+                                    Browse Opportunities
+                                </Link>
                             </Button>
                         </CardContent>
                     </Card>
@@ -170,6 +214,54 @@ export default function Creative({ user, profile, completionScore, profileComple
                             )}
                         </CardContent>
                     </Card>
+
+                    {recentApplications.length > 0 && (
+                        <Card className="md:col-span-2">
+                            <CardHeader>
+                                <CardTitle>Recent Applications</CardTitle>
+                                <CardDescription>
+                                    Track the latest roles you've applied to
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {recentApplications.map((application) => {
+                                    const appliedDate = application.applied_at
+                                        ? new Date(application.applied_at)
+                                        : null;
+
+                                    return (
+                                        <div
+                                            key={application.id}
+                                            className="flex flex-col gap-2 rounded-lg border p-4 md:flex-row md:items-center md:justify-between"
+                                        >
+                                            <div>
+                                                <p className="font-medium">
+                                                    {application.job?.title ?? 'Opportunity'}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {appliedDate
+                                                        ? `Applied ${appliedDate.toLocaleDateString()}`
+                                                        : 'Applied recently'}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <Badge variant={statusVariant(application.status)}>
+                                                    {statusLabel[application.status] ?? application.status}
+                                                </Badge>
+                                                {application.job?.slug && (
+                                                    <Button variant="ghost" size="sm" asChild>
+                                                        <Link href={`/creative/jobs/${application.job.slug}`}>
+                                                            View job
+                                                        </Link>
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
             </div>
         </AppLayout>

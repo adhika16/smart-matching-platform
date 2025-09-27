@@ -9,6 +9,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 
+interface ApplicationListItem {
+    id: number;
+    status: 'pending' | 'shortlisted' | 'rejected';
+    cover_letter?: string | null;
+    submitted_at?: string | null;
+    applicant: {
+        id: number;
+        name: string;
+        email: string;
+    };
+}
+
+interface StatusOption {
+    value: ApplicationListItem['status'];
+    label: string;
+}
+
 interface EditJobProps {
     job: JobFormValues & {
         id: number;
@@ -16,6 +33,8 @@ interface EditJobProps {
         published_at?: string | null;
     };
     compensationTypes: Array<{ value: string; label: string }>;
+    applications: ApplicationListItem[];
+    applicationStatuses: StatusOption[];
 }
 
 const statusCopy: Record<'draft' | 'published' | 'archived', { label: string; description: string; badge: 'outline' | 'default' | 'secondary' }> = {
@@ -36,7 +55,13 @@ const statusCopy: Record<'draft' | 'published' | 'archived', { label: string; de
     },
 };
 
-export default function Edit({ job, compensationTypes }: EditJobProps) {
+export default function Edit({ job, compensationTypes, applications, applicationStatuses }: EditJobProps) {
+    const statusBadgeVariant: Record<ApplicationListItem['status'], 'outline' | 'default' | 'secondary'> = {
+        pending: 'outline',
+        shortlisted: 'default',
+        rejected: 'secondary',
+    };
+
     return (
         <AppLayout>
             <Head title={`Edit job · ${job.title}`} />
@@ -109,6 +134,80 @@ export default function Edit({ job, compensationTypes }: EditJobProps) {
                         publish: job.status === 'published' ? 'Update & republish' : 'Save & publish',
                     }}
                 />
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center justify-between gap-4">
+                            <span>Applications</span>
+                            <Badge variant="outline">{applications.length}</Badge>
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                            Review and update the status of creatives who have applied to this opportunity.
+                        </p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {applications.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">
+                                You haven’t received any applications yet. Once creatives apply, they’ll appear here.
+                            </p>
+                        ) : (
+                            applications.map((application) => (
+                                <div
+                                    key={application.id}
+                                    className="rounded-md border p-4 md:flex md:items-start md:justify-between md:gap-6"
+                                >
+                                    <div className="space-y-2">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <h3 className="text-lg font-semibold">{application.applicant.name}</h3>
+                                            <Badge variant={statusBadgeVariant[application.status]} className="capitalize">
+                                                {application.status}
+                                            </Badge>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">{application.applicant.email}</p>
+                                        {application.submitted_at && (
+                                            <p className="text-xs text-muted-foreground">
+                                                Applied {new Date(application.submitted_at).toLocaleString()}
+                                            </p>
+                                        )}
+                                        {application.cover_letter && (
+                                            <div className="rounded-md bg-muted p-3 text-sm">
+                                                <p className="whitespace-pre-line">{application.cover_letter}</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <Form
+                                        method="patch"
+                                        action={`/opportunity-owner/jobs/${job.id}/applications/${application.id}`}
+                                        className="mt-4 flex flex-col gap-2 md:mt-0 md:w-56"
+                                    >
+                                        {({ processing }) => (
+                                            <>
+                                                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                                    Update status
+                                                </label>
+                                                <select
+                                                    name="status"
+                                                    defaultValue={application.status}
+                                                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                                >
+                                                    {applicationStatuses.map((option) => (
+                                                        <option key={option.value} value={option.value}>
+                                                            {option.label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <Button type="submit" size="sm" disabled={processing}>
+                                                    {processing ? 'Saving…' : 'Save' }
+                                                </Button>
+                                            </>
+                                        )}
+                                    </Form>
+                                </div>
+                            ))
+                        )}
+                    </CardContent>
+                </Card>
             </div>
         </AppLayout>
     );

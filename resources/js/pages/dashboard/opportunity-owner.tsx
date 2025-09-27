@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
-import { Building2, Users, CheckCircle2, Settings, Plus, AlertTriangle } from 'lucide-react';
-import { create as jobsCreateRoute, index as jobsIndexRoute } from '@/routes/opportunity-owner/jobs';
+import { Building2, Users, CheckCircle2, Settings, Plus, AlertTriangle, ArrowUpRight, Mail } from 'lucide-react';
+import opportunityOwnerRoutes from '@/routes/opportunity-owner';
+import creativeRoutes from '@/routes/creative';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +32,35 @@ interface OpportunityOwnerProps {
         draft: number;
         archived: number;
     };
+    applicationStats: {
+        total: number;
+        pending: number;
+    };
+    recentApplications?: {
+        id: number;
+        status: string;
+        submitted_at?: string | null;
+        applicant?: {
+            name?: string | null;
+            email?: string | null;
+        } | null;
+        job?: {
+            id?: number | null;
+            title?: string | null;
+            slug?: string | null;
+            status?: string | null;
+        } | null;
+    }[];
+    jobApplicationOverview?: {
+        id: number;
+        title: string;
+        slug?: string | null;
+        status: string;
+        published_at?: string | null;
+        applications_count: number;
+        pending_count: number;
+        shortlisted_count: number;
+    }[];
 }
 
 export default function OpportunityOwner({
@@ -39,8 +69,28 @@ export default function OpportunityOwner({
     completionScore,
     profileComplete,
     isVerified,
-    jobStats
+    jobStats,
+    applicationStats,
+    recentApplications = [],
+    jobApplicationOverview = [],
 }: OpportunityOwnerProps) {
+    const statusVariant = (status: string) => {
+        switch (status) {
+            case 'shortlisted':
+                return 'default' as const;
+            case 'rejected':
+                return 'destructive' as const;
+            default:
+                return 'secondary' as const;
+        }
+    };
+
+    const statusLabel: Record<string, string> = {
+        pending: 'Pending review',
+        shortlisted: 'Shortlisted',
+        rejected: 'Rejected',
+    };
+
     return (
         <AppLayout>
             <Head title="Opportunity Owner Dashboard" />
@@ -130,9 +180,9 @@ export default function OpportunityOwner({
                             <Users className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">0</div>
+                            <div className="text-2xl font-bold">{applicationStats.total}</div>
                             <p className="text-xs text-muted-foreground mt-2">
-                                Applications this month
+                                {applicationStats.pending} waiting for review
                             </p>
                         </CardContent>
                     </Card>
@@ -156,7 +206,7 @@ export default function OpportunityOwner({
 
                             {profileComplete ? (
                                 <Button asChild className="w-full justify-start">
-                                    <Link href={jobsCreateRoute().url}>
+                                    <Link href={opportunityOwnerRoutes.jobs.create.url()}>
                                         <Plus className="mr-2 h-4 w-4" />
                                         Post a job
                                     </Link>
@@ -173,7 +223,7 @@ export default function OpportunityOwner({
                             )}
 
                             <Button asChild variant="outline" className="w-full justify-start">
-                                <Link href={jobsIndexRoute().url}>
+                                <Link href={opportunityOwnerRoutes.jobs.index.url()}>
                                     <Users className="mr-2 h-4 w-4" />
                                     Manage jobs
                                 </Link>
@@ -252,6 +302,164 @@ export default function OpportunityOwner({
                                             Get Started
                                         </Link>
                                     </Button>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="md:col-span-2">
+                        <CardHeader>
+                            <CardTitle>Recent Applications</CardTitle>
+                            <CardDescription>
+                                Stay on top of new creatives reaching out
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {recentApplications.length === 0 ? (
+                                <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                                    You haven&apos;t received any applications yet. Once creatives apply to your live jobs,
+                                    you&apos;ll see them here.
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {recentApplications.map((application) => {
+                                        const submittedDate = application.submitted_at
+                                            ? new Date(application.submitted_at)
+                                            : null;
+
+                                        return (
+                                            <div
+                                                key={application.id}
+                                                className="rounded-lg border bg-card p-4 shadow-sm"
+                                            >
+                                                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <h3 className="text-base font-semibold">
+                                                                {application.job?.title ?? 'Opportunity'}
+                                                            </h3>
+                                                            {application.job?.status === 'published' && (
+                                                                <Badge variant="outline" className="text-xs">
+                                                                    Live
+                                                                </Badge>
+                                                            )}
+                                                            {application.job?.status === 'draft' && (
+                                                                <Badge variant="secondary" className="text-xs">
+                                                                    Draft
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {application.applicant?.name ?? 'Creative applicant'}
+                                                            {application.applicant?.email && (
+                                                                <span className="flex items-center gap-1 text-xs">
+                                                                    <Mail className="h-3 w-3" />
+                                                                    {application.applicant.email}
+                                                                </span>
+                                                            )}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {submittedDate
+                                                                ? `Submitted ${submittedDate.toLocaleString()}`
+                                                                : 'Submitted recently'}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <Badge variant={statusVariant(application.status)}>
+                                                            {statusLabel[application.status] ?? application.status}
+                                                        </Badge>
+
+                                                        {application.job?.id && (
+                                                            <Button variant="outline" size="sm" asChild>
+                                                                <Link href={opportunityOwnerRoutes.jobs.edit.url({ job: application.job.id })}>
+                                                                    Manage job
+                                                                    <ArrowUpRight className="ml-1 h-4 w-4" />
+                                                                </Link>
+                                                            </Button>
+                                                        )}
+
+                                                        {application.job?.slug && (
+                                                            <Button variant="secondary" size="sm" asChild>
+                                                                <Link href={creativeRoutes.jobs.show.url({ job: application.job.slug })}>
+                                                                    View posting
+                                                                </Link>
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="md:col-span-2">
+                        <CardHeader>
+                            <CardTitle>Job Application Overview</CardTitle>
+                            <CardDescription>
+                                Review applicant momentum across your recent postings
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {jobApplicationOverview.length === 0 ? (
+                                <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                                    Publish a job to start receiving applications.
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full min-w-[600px] text-sm">
+                                        <thead>
+                                            <tr className="text-left text-xs uppercase text-muted-foreground">
+                                                <th className="py-2 pr-4">Job</th>
+                                                <th className="py-2 pr-4">Status</th>
+                                                <th className="py-2 pr-4 text-center">Applicants</th>
+                                                <th className="py-2 pr-4 text-center">Pending</th>
+                                                <th className="py-2 pr-4 text-center">Shortlisted</th>
+                                                <th className="py-2 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {jobApplicationOverview.map((job) => (
+                                                <tr key={job.id} className="align-middle">
+                                                    <td className="py-3 pr-4">
+                                                        <div className="font-medium">{job.title}</div>
+                                                        {job.published_at && (
+                                                            <div className="text-xs text-muted-foreground">
+                                                                Published {new Date(job.published_at).toLocaleDateString()}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-3 pr-4">
+                                                        <Badge variant={job.status === 'published' ? 'default' : job.status === 'draft' ? 'secondary' : 'outline'}>
+                                                            {job.status}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="py-3 pr-4 text-center font-semibold">{job.applications_count}</td>
+                                                    <td className="py-3 pr-4 text-center">{job.pending_count}</td>
+                                                    <td className="py-3 pr-4 text-center">{job.shortlisted_count}</td>
+                                                    <td className="py-3 text-right">
+                                                        <div className="flex justify-end gap-2">
+                                                            <Button variant="outline" size="sm" asChild>
+                                                                <Link href={opportunityOwnerRoutes.jobs.edit.url({ job: job.id })}>
+                                                                    Manage
+                                                                </Link>
+                                                            </Button>
+                                                            {job.slug && (
+                                                                <Button variant="ghost" size="sm" asChild>
+                                                                    <Link href={creativeRoutes.jobs.show.url({ job: job.slug })}>
+                                                                        View
+                                                                    </Link>
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             )}
                         </CardContent>

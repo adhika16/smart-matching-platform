@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Application;
 use App\Models\Job;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -87,6 +88,22 @@ class JobController extends Controller
     {
         $this->authorize('update', $job);
 
+        $applications = $job->applications()
+            ->with('applicant')
+            ->latest()
+            ->get()
+            ->map(fn ($application) => [
+                'id' => $application->id,
+                'status' => $application->status,
+                'cover_letter' => $application->cover_letter,
+                'submitted_at' => $application->created_at?->toIso8601String(),
+                'applicant' => [
+                    'id' => $application->applicant->id,
+                    'name' => $application->applicant->name,
+                    'email' => $application->applicant->email,
+                ],
+            ]);
+
         return Inertia::render('opportunity-owner/jobs/edit', [
             'job' => [
                 'id' => $job->id,
@@ -103,6 +120,12 @@ class JobController extends Controller
                 'published_at' => $job->published_at?->toIso8601String(),
             ],
             'compensationTypes' => $this->compensationTypes(),
+            'applications' => $applications,
+            'applicationStatuses' => [
+                ['value' => Application::STATUS_PENDING, 'label' => 'Pending review'],
+                ['value' => Application::STATUS_SHORTLISTED, 'label' => 'Shortlisted'],
+                ['value' => Application::STATUS_REJECTED, 'label' => 'Rejected'],
+            ],
         ]);
     }
 

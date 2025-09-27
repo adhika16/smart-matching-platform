@@ -76,10 +76,12 @@ export default function CreativeProfileForm({ profile }: CreativeProfileFormProp
                         </div>
 
                         <div className="flex items-center space-x-2">
+                            <input type="hidden" name="available_for_work" value="0" />
                             <input
                                 type="checkbox"
                                 id="available_for_work"
                                 name="available_for_work"
+                                value="1"
                                 defaultChecked={profile?.available_for_work ?? true}
                                 className="h-4 w-4 rounded border border-primary"
                             />

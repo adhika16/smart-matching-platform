@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -77,6 +78,22 @@ class User extends Authenticatable
     public function jobs(): HasMany
     {
         return $this->hasMany(Job::class);
+    }
+
+    /**
+     * Applications submitted by the user as a creative.
+     */
+    public function applications(): HasMany
+    {
+        return $this->hasMany(Application::class);
+    }
+
+    /**
+     * Applications received across the user's job postings.
+     */
+    public function receivedApplications(): HasManyThrough
+    {
+        return $this->hasManyThrough(Application::class, Job::class, 'user_id', 'job_id');
     }
 
     /**
