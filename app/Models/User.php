@@ -25,6 +25,7 @@ class User extends Authenticatable
         'email',
         'password',
         'user_type',
+        'is_admin',
         'profile_completed_at',
         'profile_completion_score',
     ];
@@ -50,6 +51,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'profile_completed_at' => 'datetime',
+            'is_admin' => 'boolean',
         ];
     }
 
@@ -91,6 +93,14 @@ class User extends Authenticatable
     public function isOpportunityOwner(): bool
     {
         return $this->user_type === 'opportunity_owner';
+    }
+
+    /**
+     * Determine if the user has administrator privileges.
+     */
+    public function isAdmin(): bool
+    {
+        return (bool) $this->is_admin;
     }
 
     /**

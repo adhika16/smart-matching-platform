@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\OpportunityOwnerVerificationController;
 use App\Http\Controllers\CreativeDashboardController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\OpportunityOwnerDashboardController;
@@ -34,9 +35,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
     });
 
+    // Admin routes
+    Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('opportunity-owners', [OpportunityOwnerVerificationController::class, 'index'])
+            ->name('opportunity-owners.index');
+        Route::post('opportunity-owners/{opportunityOwnerProfile}/approve', [OpportunityOwnerVerificationController::class, 'approve'])
+            ->name('opportunity-owners.approve');
+        Route::post('opportunity-owners/{opportunityOwnerProfile}/reject', [OpportunityOwnerVerificationController::class, 'reject'])
+            ->name('opportunity-owners.reject');
+    });
+
     // Redirect dashboard to appropriate user type dashboard
     Route::get('dashboard', function () {
         $user = auth()->user();
+
+        if ($user->isAdmin()) {
+            return redirect()->route('admin.opportunity-owners.index');
+        }
 
         if ($user->isCreative()) {
             return redirect()->route('dashboard.creative');

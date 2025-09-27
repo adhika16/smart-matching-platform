@@ -30,6 +30,7 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'user_type' => 'creative',
+            'is_admin' => false,
         ];
     }
 
@@ -54,6 +55,13 @@ class UserFactory extends Factory
     {
         return $this->state(fn () => [
             'user_type' => 'opportunity_owner',
+        ]);
+    }
+
+    public function admin(): static
+    {
+        return $this->state(fn () => [
+            'is_admin' => true,
         ]);
     }
 }

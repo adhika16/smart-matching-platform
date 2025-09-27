@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { Building2, Users, CheckCircle2, Settings, Plus } from 'lucide-react';
+import { Building2, Users, CheckCircle2, Settings, Plus, AlertTriangle } from 'lucide-react';
 import { create as jobsCreateRoute, index as jobsIndexRoute } from '@/routes/opportunity-owner/jobs';
 
 import { Button } from '@/components/ui/button';
@@ -71,6 +71,20 @@ export default function OpportunityOwner({
                         </div>
                     </div>
                 </div>
+
+                {!isVerified && (
+                    <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900">
+                        <div className="flex items-start gap-3">
+                            <AlertTriangle className="mt-1 h-5 w-5" />
+                            <div>
+                                <p className="font-semibold">Verification pending</p>
+                                <p className="text-sm">
+                                    Thanks for completing your company profile. An administrator is reviewing your details now. You’ll receive access to post opportunities once your account is approved.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
                     <Card>
