@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,6 +30,8 @@ class JobController extends Controller
                 'id' => $job->id,
                 'title' => $job->title,
                 'status' => $job->status,
+                'category' => $job->category,
+                'skills' => $job->skills,
                 'published_at' => $job->published_at?->toIso8601String(),
                 'created_at' => $job->created_at?->toIso8601String(),
                 'updated_at' => $job->updated_at?->toIso8601String(),
@@ -48,6 +51,7 @@ class JobController extends Controller
 
         return Inertia::render('opportunity-owner/jobs/create', [
             'compensationTypes' => $this->compensationTypes(),
+            'taxonomy' => $this->taxonomy(),
         ]);
     }
 
@@ -71,8 +75,14 @@ class JobController extends Controller
             'compensation_min' => $data['compensation_min'] ?? null,
             'compensation_max' => $data['compensation_max'] ?? null,
             'tags' => $data['tags'] ?? null,
+            'skills' => $data['skills'] ?? null,
+            'category' => $data['category'] ?? null,
             'summary' => $data['summary'] ?? null,
             'description' => $data['description'],
+            'timeline_start' => $data['timeline_start'] ?? null,
+            'timeline_end' => $data['timeline_end'] ?? null,
+            'budget_min' => $data['budget_min'] ?? null,
+            'budget_max' => $data['budget_max'] ?? null,
             'published_at' => $status === Job::STATUS_PUBLISHED ? Date::now() : null,
         ]);
 
@@ -115,11 +125,22 @@ class JobController extends Controller
                 'compensation_min' => $job->compensation_min,
                 'compensation_max' => $job->compensation_max,
                 'tags' => $job->tags,
+                'skills' => $job->skills,
+                'category' => $job->category,
                 'summary' => $job->summary,
                 'description' => $job->description,
                 'published_at' => $job->published_at?->toIso8601String(),
+                'timeline_start' => $job->timeline_start instanceof \Illuminate\Support\Carbon
+                    ? $job->timeline_start->format('Y-m-d')
+                    : $job->timeline_start,
+                'timeline_end' => $job->timeline_end instanceof \Illuminate\Support\Carbon
+                    ? $job->timeline_end->format('Y-m-d')
+                    : $job->timeline_end,
+                'budget_min' => $job->budget_min,
+                'budget_max' => $job->budget_max,
             ],
             'compensationTypes' => $this->compensationTypes(),
+            'taxonomy' => $this->taxonomy(),
             'applications' => $applications,
             'applicationStatuses' => [
                 ['value' => Application::STATUS_PENDING, 'label' => 'Pending review'],
@@ -148,8 +169,14 @@ class JobController extends Controller
             'compensation_min' => $data['compensation_min'] ?? null,
             'compensation_max' => $data['compensation_max'] ?? null,
             'tags' => $data['tags'] ?? null,
+            'skills' => $data['skills'] ?? null,
+            'category' => $data['category'] ?? null,
             'summary' => $data['summary'] ?? null,
             'description' => $data['description'],
+            'timeline_start' => $data['timeline_start'] ?? null,
+            'timeline_end' => $data['timeline_end'] ?? null,
+            'budget_min' => $data['budget_min'] ?? null,
+            'budget_max' => $data['budget_max'] ?? null,
         ];
 
         if (($status ?? $job->status) === Job::STATUS_PUBLISHED && ! $job->isPublished()) {
@@ -223,6 +250,15 @@ class JobController extends Controller
      */
     protected function validateJob(Request $request): array
     {
+        $taxonomy = $this->taxonomy();
+        $skillValues = collect($taxonomy['skills'] ?? [])->pluck('value')->filter()->values()->all();
+        $categoryValues = collect($taxonomy['categories'] ?? [])->pluck('value')->filter()->values()->all();
+
+        $skillRule = count($skillValues) > 0 ? ['required', 'array', 'min:1'] : ['nullable', 'array'];
+        $categoryRule = count($categoryValues) > 0
+            ? ['required', Rule::in($categoryValues)]
+            : ['nullable', 'string', 'max:100'];
+
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'summary' => ['nullable', 'string', 'max:500'],
@@ -232,7 +268,15 @@ class JobController extends Controller
             'compensation_type' => ['nullable', 'in:hourly,project,salary'],
             'compensation_min' => ['nullable', 'numeric', 'min:0'],
             'compensation_max' => ['nullable', 'numeric', 'min:0'],
-            'tags' => ['nullable'],
+            'skills' => $skillRule,
+            'skills.*' => count($skillValues) > 0
+                ? ['string', Rule::in($skillValues)]
+                : ['string', 'max:50'],
+            'category' => $categoryRule,
+            'timeline_start' => ['nullable', 'date'],
+            'timeline_end' => ['nullable', 'date', 'after_or_equal:timeline_start'],
+            'budget_min' => ['nullable', 'numeric', 'min:0'],
+            'budget_max' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         if (! empty($data['compensation_min']) && ! empty($data['compensation_max'])
@@ -242,7 +286,16 @@ class JobController extends Controller
             ]);
         }
 
-        $data['tags'] = $this->normalizeTags($request->input('tags'));
+        if (! empty($data['budget_min']) && ! empty($data['budget_max'])
+            && $data['budget_min'] > $data['budget_max']) {
+            throw ValidationException::withMessages([
+                'budget_max' => 'Maximum budget must be greater than or equal to minimum budget.',
+            ]);
+        }
+
+        $data['description'] = $this->sanitizeHtml($data['description']);
+        $data['skills'] = collect($data['skills'] ?? [])->map(fn ($skill) => (string) $skill)->unique()->values()->all();
+        $data['tags'] = $data['skills'];
         $data['is_remote'] = filter_var($request->input('is_remote', false), FILTER_VALIDATE_BOOLEAN);
 
         return $data;
@@ -293,6 +346,42 @@ class JobController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Sanitize rich-text content to a safe HTML subset.
+     */
+    protected function sanitizeHtml(string $html): string
+    {
+    $allowedTags = '<p><br><strong><em><u><ul><ol><li><a><blockquote><h2><h3><h4>';
+        $cleaned = strip_tags($html, $allowedTags);
+
+        // Remove potential javascript: URLs in anchors.
+        $cleaned = preg_replace_callback('/<a\s+[^>]*href="([^"]*)"[^>]*>/i', function ($matches) {
+            $href = $matches[1] ?? '';
+            if (str_starts_with(strtolower($href), 'javascript:')) {
+                return str_replace($matches[1], '#', $matches[0]);
+            }
+
+            return $matches[0];
+        }, $cleaned ?? '');
+
+        $cleaned = preg_replace('/on[a-zA-Z]+="[^"]*"/i', '', $cleaned ?? '');
+
+        return $cleaned ?? '';
+    }
+
+    /**
+     * Get structured taxonomy options for the job form.
+     *
+     * @return array{skills: array<int, array{value: string, label: string}>, categories: array<int, array{value: string, label: string}>}
+     */
+    protected function taxonomy(): array
+    {
+        return [
+            'skills' => config('taxonomy.skills', []),
+            'categories' => config('taxonomy.categories', []),
+        ];
     }
 
     /**

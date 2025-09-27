@@ -35,6 +35,10 @@ interface EditJobProps {
     compensationTypes: Array<{ value: string; label: string }>;
     applications: ApplicationListItem[];
     applicationStatuses: StatusOption[];
+    taxonomy: {
+        skills: Array<{ value: string; label: string }>;
+        categories: Array<{ value: string; label: string }>;
+    };
 }
 
 const statusCopy: Record<'draft' | 'published' | 'archived', { label: string; description: string; badge: 'outline' | 'default' | 'secondary' }> = {
@@ -55,7 +59,7 @@ const statusCopy: Record<'draft' | 'published' | 'archived', { label: string; de
     },
 };
 
-export default function Edit({ job, compensationTypes, applications, applicationStatuses }: EditJobProps) {
+export default function Edit({ job, compensationTypes, applications, applicationStatuses, taxonomy }: EditJobProps) {
     const statusBadgeVariant: Record<ApplicationListItem['status'], 'outline' | 'default' | 'secondary'> = {
         pending: 'outline',
         shortlisted: 'default',
@@ -129,6 +133,7 @@ export default function Edit({ job, compensationTypes, applications, application
                     method="put"
                     job={job}
                     compensationTypes={compensationTypes}
+                    taxonomy={taxonomy}
                     submitLabels={{
                         draft: job.status === 'published' ? 'Save as draft' : 'Save draft',
                         publish: job.status === 'published' ? 'Update & republish' : 'Save & publish',

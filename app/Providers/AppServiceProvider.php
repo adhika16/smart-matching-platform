@@ -8,6 +8,8 @@ use App\Policies\ApplicationPolicy;
 use App\Policies\JobPolicy;
 use App\Services\Bedrock\BedrockService;
 use Aws\BedrockRuntime\BedrockRuntimeClient;
+use Laravel\Scout\Scout;
+use Meilisearch\Client as MeilisearchClient;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Psr\Log\LoggerInterface;
@@ -40,6 +42,24 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(LoggerInterface::class)
             );
         });
+
+        if (! $this->app->bound(MeilisearchClient::class)) {
+            $this->app->singleton(MeilisearchClient::class, function ($app): MeilisearchClient {
+                $config = $app['config']->get('scout.meilisearch', []);
+
+                $host = $config['host'] ?? null;
+
+                if (empty($host)) {
+                    throw new \RuntimeException('Meilisearch host is not configured. Set MEILISEARCH_HOST in your environment.');
+                }
+
+                return new MeilisearchClient(
+                    $host,
+                    $config['key'] ?? null,
+                    clientAgents: [sprintf('Meilisearch Laravel Scout (v%s)', Scout::VERSION)]
+                );
+            });
+        }
     }
 
     /**

@@ -7,10 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use Laravel\Scout\Searchable;
 
 class Job extends Model
 {
     use HasFactory;
+    use Searchable;
 
     protected $table = 'job_postings';
 
@@ -25,17 +27,28 @@ class Job extends Model
         'compensation_min',
         'compensation_max',
         'tags',
+        'category',
+        'skills',
         'summary',
         'description',
         'published_at',
+        'timeline_start',
+        'timeline_end',
+        'budget_min',
+        'budget_max',
     ];
 
     protected $casts = [
         'is_remote' => 'boolean',
         'tags' => 'array',
+        'skills' => 'array',
         'compensation_min' => 'decimal:2',
         'compensation_max' => 'decimal:2',
         'published_at' => 'datetime',
+        'timeline_start' => 'date',
+        'timeline_end' => 'date',
+        'budget_min' => 'decimal:2',
+        'budget_max' => 'decimal:2',
     ];
 
     public const STATUS_DRAFT = 'draft';
@@ -80,5 +93,40 @@ class Job extends Model
     public static function generateSlug(string $title): string
     {
         return Str::slug($title) . '-' . Str::random(6);
+    }
+
+    /**
+     * Determine if the job should be searchable.
+     */
+    public function shouldBeSearchable(): bool
+    {
+        return $this->status === self::STATUS_PUBLISHED;
+    }
+
+    /**
+     * Convert the model instance to an array for search indexing.
+     */
+    public function toSearchableArray(): array
+    {
+        $this->loadMissing(['owner.opportunityOwnerProfile']);
+
+        return [
+            'id' => $this->id,
+            'title' => $this->title,
+            'status' => $this->status,
+            'summary' => $this->summary,
+            'description' => strip_tags($this->description),
+            'location' => $this->location,
+            'is_remote' => $this->is_remote,
+            'tags' => $this->tags,
+            'skills' => $this->skills,
+            'category' => $this->category,
+            'budget_min' => $this->budget_min,
+            'budget_max' => $this->budget_max,
+            'timeline_start' => optional($this->timeline_start)?->toDateString(),
+            'timeline_end' => optional($this->timeline_end)?->toDateString(),
+            'published_at' => optional($this->published_at)?->toDateTimeString(),
+            'company' => $this->owner?->opportunityOwnerProfile?->company_name,
+        ];
     }
 }

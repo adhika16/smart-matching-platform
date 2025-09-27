@@ -5,6 +5,7 @@ use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\CreativeDashboardController;
 use App\Http\Controllers\JobBrowseController;
 use App\Http\Controllers\JobController;
+use App\Http\Controllers\JobDescriptionGeneratorController;
 use App\Http\Controllers\OpportunityOwnerDashboardController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('dashboard/opportunity-owner', [OpportunityOwnerDashboardController::class, 'index'])->name('dashboard.opportunity-owner');
 
         Route::prefix('opportunity-owner')->name('opportunity-owner.')->group(function () {
+            Route::post('jobs/description-helper', JobDescriptionGeneratorController::class)
+                ->name('jobs.generate-description');
             Route::patch('jobs/{job}/publish', [JobController::class, 'publish'])->name('jobs.publish');
             Route::patch('jobs/{job}/archive', [JobController::class, 'archive'])->name('jobs.archive');
             Route::patch('jobs/{job}/applications/{application}', [ApplicationController::class, 'update'])->name('jobs.applications.update');

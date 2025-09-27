@@ -8,9 +8,13 @@ import AppLayout from '@/layouts/app-layout';
 
 interface CreateJobProps {
     compensationTypes: Array<{ value: string; label: string }>;
+    taxonomy: {
+        skills: Array<{ value: string; label: string }>;
+        categories: Array<{ value: string; label: string }>;
+    };
 }
 
-export default function Create({ compensationTypes }: CreateJobProps) {
+export default function Create({ compensationTypes, taxonomy }: CreateJobProps) {
     return (
         <AppLayout>
             <Head title="Post a job" />
@@ -32,6 +36,7 @@ export default function Create({ compensationTypes }: CreateJobProps) {
                     action={JobController.store().url}
                     method="post"
                     compensationTypes={compensationTypes}
+                    taxonomy={taxonomy}
                     submitLabels={{
                         draft: 'Save draft',
                         publish: 'Publish job',

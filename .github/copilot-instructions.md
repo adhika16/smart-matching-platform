@@ -1,5 +1,7 @@
 # Laravel Job Board - AI Coding Agent Instructions
 
+> **Note:** Additional guidance lives in `/.github/instructions/authorization.instructions.md`, `/.github/instructions/requirement.instructions.md`, and `/resources/...` scoped rules from `/.github/instructions/resource.instructions.md`. Review those documents before making changes to ensure role-based auth, platform requirements, and frontend conventions are respected.
+
 ## Architecture Overview
 
 This is a **Laravel + Inertia.js + React** application using **Laravel Wayfinder** for type-safe routing and form handling. The architecture follows a hybrid SPA pattern where React components are rendered server-side via Inertia.js.

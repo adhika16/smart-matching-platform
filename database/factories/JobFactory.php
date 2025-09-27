@@ -21,6 +21,16 @@ class JobFactory extends Factory
     public function definition(): array
     {
         $title = fake()->jobTitle();
+        $skills = collect(config('taxonomy.skills', []))->pluck('value')->all();
+        $categories = collect(config('taxonomy.categories', []))->pluck('value')->all();
+
+        $selectedSkills = empty($skills)
+            ? [fake()->unique()->word()]
+            : collect($skills)->shuffle()->take(fake()->numberBetween(2, 4))->values()->all();
+
+        $category = empty($categories)
+            ? null
+            : collect($categories)->random();
 
         return [
             'user_id' => User::factory()->opportunityOwner(),
@@ -32,10 +42,16 @@ class JobFactory extends Factory
             'compensation_type' => fake()->randomElement(['hourly', 'project', 'salary']) ?? null,
             'compensation_min' => fake()->numberBetween(30, 80),
             'compensation_max' => fake()->numberBetween(81, 150),
-            'tags' => fake()->words(3),
+            'tags' => $selectedSkills,
+            'category' => $category,
+            'skills' => $selectedSkills,
             'summary' => fake()->sentence(12),
             'description' => fake()->paragraphs(3, true),
             'published_at' => null,
+            'timeline_start' => now()->addDays(fake()->numberBetween(7, 21))->toDateString(),
+            'timeline_end' => now()->addDays(fake()->numberBetween(30, 90))->toDateString(),
+            'budget_min' => fake()->numberBetween(5000, 15000),
+            'budget_max' => fake()->numberBetween(15001, 45000),
         ];
     }
 
