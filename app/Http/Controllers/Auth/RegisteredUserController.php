@@ -34,14 +34,16 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'user_type' => 'required|string|in:creative,opportunity_owner',
+            'user_type' => 'nullable|string|in:creative,opportunity_owner',
         ]);
+
+    $userType = $request->input('user_type') ?: 'creative';
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'user_type' => $request->user_type,
+            'user_type' => $userType,
         ]);
 
         // Create the appropriate profile based on user type
@@ -57,7 +59,6 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        // Redirect to profile setup instead of dashboard
-        return redirect()->route('profile.setup');
+        return redirect()->route('dashboard');
     }
 }

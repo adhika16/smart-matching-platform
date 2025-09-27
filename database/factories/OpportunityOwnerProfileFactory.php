@@ -29,6 +29,7 @@ class OpportunityOwnerProfileFactory extends Factory
             'industry' => fake()->word(),
             'is_verified' => true,
             'verified_at' => now(),
+            'verification_documents' => [],
         ];
     }
 

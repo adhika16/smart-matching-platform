@@ -54,7 +54,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('opportunity-owners.reject');
     });
 
-    // Redirect dashboard to appropriate user type dashboard
+    // Render the appropriate dashboard for the authenticated user type
     Route::get('dashboard', function () {
         $user = auth()->user();
 
@@ -63,10 +63,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         }
 
         if ($user->isCreative()) {
-            return redirect()->route('dashboard.creative');
-        } else {
-            return redirect()->route('dashboard.opportunity-owner');
+            return app(CreativeDashboardController::class)->index();
         }
+
+        return app(OpportunityOwnerDashboardController::class)->index();
     })->name('dashboard');
 });
 
