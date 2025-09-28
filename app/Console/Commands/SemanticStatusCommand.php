@@ -2,13 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Models\CreativeProfile;
-use App\Models\EmbeddingCache;
-use App\Models\Job;
-use App\Services\Bedrock\BedrockService;
-use App\Services\Pinecone\PineconeService;
+use App\Services\Semantic\SemanticHealthService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 class SemanticStatusCommand extends Command
 {
@@ -17,8 +13,7 @@ class SemanticStatusCommand extends Command
     protected $description = 'Display semantic search health, queue status, and embedding freshness.';
 
     public function __construct(
-        private readonly BedrockService $bedrock,
-        private readonly PineconeService $pinecone,
+        private readonly SemanticHealthService $healthService,
     ) {
         parent::__construct();
     }
@@ -28,54 +23,58 @@ class SemanticStatusCommand extends Command
         $this->line('Semantic Search Status');
         $this->line('=======================');
 
-        $this->info(sprintf('Bedrock enabled: %s', $this->bedrock->isEnabled() ? 'yes' : 'no'));
-        $this->info(sprintf('Pinecone enabled: %s', $this->pinecone->isEnabled() ? 'yes' : 'no'));
-        $this->info(sprintf('Pinecone simulate mode: %s', $this->pinecone->shouldSimulate() ? 'yes' : 'no'));
+        $snapshot = $this->healthService->snapshot();
 
-        $queueConnection = config('queue.connections.'.config('queue.default'), []);
-        $queueDriver = $queueConnection['driver'] ?? null;
-        $pendingJobs = 0;
-        $failedJobs = 0;
-
-        if ($queueDriver === 'database') {
-            $queueTable = $queueConnection['table'] ?? 'jobs';
-            $failedTable = config('queue.failed.table', 'failed_jobs');
-
-            $pendingJobs = DB::table($queueTable)->count();
-            $failedJobs = DB::table($failedTable)->count();
-        }
+        $this->info(sprintf('Bedrock enabled: %s', $snapshot['bedrock']['enabled'] ? 'yes' : 'no'));
+        $this->info(sprintf('Pinecone enabled: %s', $snapshot['pinecone']['enabled'] ? 'yes' : 'no'));
+        $this->info(sprintf('Pinecone simulate mode: %s', $snapshot['pinecone']['simulate'] ? 'yes' : 'no'));
 
         $this->line('');
         $this->info('Queue metrics');
-        $this->line(sprintf('Pending jobs: %d', $pendingJobs));
-        $this->line(sprintf('Failed jobs: %d', $failedJobs));
 
-        $latestJobEmbedding = EmbeddingCache::query()
-            ->where('entity_type', Job::class)
-            ->latest('generated_at')
-            ->first();
+        $pending = $snapshot['queue']['supports_counts']
+            ? (string) ($snapshot['queue']['pending_jobs'] ?? 0)
+            : 'n/a';
 
-        $latestProfileEmbedding = EmbeddingCache::query()
-            ->where('entity_type', CreativeProfile::class)
-            ->latest('generated_at')
-            ->first();
+        $failed = $snapshot['queue']['supports_counts']
+            ? (string) ($snapshot['queue']['failed_jobs'] ?? 0)
+            : 'n/a';
+
+        $this->line(sprintf('Queue driver: %s', $snapshot['queue']['driver'] ?? 'unknown'));
+        $this->line(sprintf('Pending jobs: %s', $pending));
+        $this->line(sprintf('Failed jobs: %s', $failed));
 
         $this->line('');
         $this->info('Embedding freshness');
-    $jobFreshness = optional($latestJobEmbedding?->generated_at)->diffForHumans() ?? 'never';
-    $profileFreshness = optional($latestProfileEmbedding?->generated_at)->diffForHumans() ?? 'never';
 
-    $this->line(sprintf('Latest job embedding: %s', $jobFreshness));
-    $this->line(sprintf('Latest creative profile embedding: %s', $profileFreshness));
+        $jobFreshness = $this->formatRelativeTime($snapshot['embeddings']['latest_job_generated_at']);
+        $creativeFreshness = $this->formatRelativeTime($snapshot['embeddings']['latest_profile_generated_at']);
 
-        if (! $this->pinecone->isEnabled()) {
+        $this->line(sprintf('Latest job embedding: %s', $jobFreshness));
+        $this->line(sprintf('Latest creative profile embedding: %s', $creativeFreshness));
+        $this->line(sprintf('Cached embeddings: %d', $snapshot['embeddings']['total_cached_records']));
+
+        if (! $snapshot['pinecone']['enabled']) {
             $this->warn('Pinecone is disabled. Semantic search will fall back to local embedding cache.');
         }
 
-        if (! $this->bedrock->isEnabled()) {
+        if (! $snapshot['bedrock']['enabled']) {
             $this->warn('Bedrock is disabled. Using deterministic fallback vectors.');
         }
 
+        foreach ($snapshot['recommendations'] as $recommendation) {
+            $this->line(sprintf('- %s', $recommendation));
+        }
+
         return self::SUCCESS;
+    }
+
+    private function formatRelativeTime(?string $timestamp): string
+    {
+        if ($timestamp === null) {
+            return 'never';
+        }
+
+        return Carbon::parse($timestamp)->diffForHumans();
     }
 }

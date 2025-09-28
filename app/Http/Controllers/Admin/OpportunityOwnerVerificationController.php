@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\OpportunityOwnerProfile;
 use App\Models\OpportunityOwnerVerificationLog;
+use App\Services\Semantic\SemanticHealthService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
@@ -14,6 +15,10 @@ use Inertia\Response;
 
 class OpportunityOwnerVerificationController extends Controller
 {
+    public function __construct(private readonly SemanticHealthService $semanticHealth)
+    {
+    }
+
     /**
      * Display a listing of opportunity owner profiles awaiting verification.
      */
@@ -87,9 +92,12 @@ class OpportunityOwnerVerificationController extends Controller
                 ],
             ]);
 
+        $queueHealth = $this->semanticHealth->snapshot();
+
         return Inertia::render('admin/opportunity-owners/index', [
             'pendingProfiles' => $pendingProfiles,
             'recentlyVerified' => $recentlyVerified,
+            'queueHealth' => $queueHealth,
         ]);
     }
 

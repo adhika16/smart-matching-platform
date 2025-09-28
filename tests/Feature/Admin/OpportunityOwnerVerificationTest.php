@@ -7,6 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\assertDatabaseHas;
 use function Pest\Laravel\get;
+use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\post;
 
 uses(RefreshDatabase::class);
@@ -65,4 +66,20 @@ test('admin dashboard redirect sends user to admin verification page', function 
     actingAs($admin)
         ->get('/dashboard')
         ->assertRedirect(route('admin.opportunity-owners.index'));
+});
+
+test('admin verification view includes queue health snapshot', function () {
+    $admin = User::factory()->admin()->create();
+
+    actingAs($admin)
+        ->get(route('admin.opportunity-owners.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/opportunity-owners/index')
+            ->has('queueHealth', fn (Assert $prop) => $prop
+                ->has('bedrock')
+                ->has('pinecone')
+                ->has('queue')
+                ->has('embeddings')
+                ->has('recommendations')
+            ));
 });

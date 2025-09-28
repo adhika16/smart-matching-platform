@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { QueueHealthCard, QueueHealthSnapshot } from '@/pages/admin/partials/queue-health-card';
 
 interface VerificationDocument {
     original_name: string;
@@ -53,9 +54,10 @@ interface VerifiedProfile {
 interface OpportunityOwnerAdminProps {
     pendingProfiles: PendingProfile[];
     recentlyVerified: VerifiedProfile[];
+    queueHealth: QueueHealthSnapshot;
 }
 
-export default function OpportunityOwnerAdminIndex({ pendingProfiles, recentlyVerified }: OpportunityOwnerAdminProps) {
+export default function OpportunityOwnerAdminIndex({ pendingProfiles, recentlyVerified, queueHealth }: OpportunityOwnerAdminProps) {
     const [notes, setNotes] = useState<Record<number, string>>({});
     const [submittingId, setSubmittingId] = useState<number | null>(null);
     const [submittingAction, setSubmittingAction] = useState<'approve' | 'reject' | null>(null);
@@ -92,6 +94,8 @@ export default function OpportunityOwnerAdminIndex({ pendingProfiles, recentlyVe
                         Review pending company profiles and manually approve verified businesses.
                     </p>
                 </div>
+
+                <QueueHealthCard snapshot={queueHealth} />
 
                 <Card>
                     <CardHeader>
