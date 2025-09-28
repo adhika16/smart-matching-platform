@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Jobs\SyncCreativeProfileEmbeddings;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,6 +10,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class CreativeProfile extends Model
 {
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::saved(function (CreativeProfile $profile): void {
+            SyncCreativeProfileEmbeddings::dispatch($profile->id, false)->afterCommit();
+        });
+    }
 
     protected $fillable = [
         'user_id',

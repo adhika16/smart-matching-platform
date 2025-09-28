@@ -6,7 +6,7 @@ return [
 
     'prefix' => env('SCOUT_PREFIX', ''),
 
-    'queue' => env('SCOUT_QUEUE', true),
+    'queue' => env('SCOUT_QUEUE', env('APP_ENV') === 'production'),
 
     'after_commit' => env('SCOUT_AFTER_COMMIT', true),
 

@@ -1,6 +1,8 @@
 <?php
 
 use App\Console\Commands\BedrockSmokeTestCommand;
+use App\Console\Commands\SemanticReindexCommand;
+use App\Console\Commands\SemanticStatusCommand;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -18,6 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withCommands([
         BedrockSmokeTestCommand::class,
+        SemanticReindexCommand::class,
+        SemanticStatusCommand::class,
     ])
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);

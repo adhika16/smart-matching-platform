@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Jobs\SyncJobEmbeddings;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -54,6 +55,17 @@ class Job extends Model
     public const STATUS_DRAFT = 'draft';
     public const STATUS_PUBLISHED = 'published';
     public const STATUS_ARCHIVED = 'archived';
+
+    protected static function booted(): void
+    {
+        static::saved(function (Job $job): void {
+            SyncJobEmbeddings::dispatch($job->id, false)->afterCommit();
+        });
+
+        static::deleted(function (Job $job): void {
+            SyncJobEmbeddings::dispatch($job->id, true)->afterCommit();
+        });
+    }
 
     /**
      * Get the opportunity owner who created the job.
