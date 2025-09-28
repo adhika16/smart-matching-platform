@@ -1,20 +1,34 @@
 <?php
 
 return [
-    'enabled' => env('PINECONE_ENABLED', false),
+    /*
+    |--------------------------------------------------------------------------
+    | Pinecone Configuration
+    |--------------------------------------------------------------------------
+    |
+    | This configuration manages the connection to the Pinecone vector database.
+    | The settings here are used by the Pinecone PHP client to interact with
+    | your indexes for semantic search capabilities.
+    |
+    | - `enabled`: Master switch to enable or disable Pinecone integration.
+    | - `simulate`: If true, Pinecone operations are logged but not executed.
+    | - `api_key`: Your Pinecone API key.
+    | - `environment`: The environment where your Pinecone index is hosted.
+    | - `index`: The name of the default index to use for vector operations.
+    | - `namespace`: The default namespace within the index.
+    |
+    */
+
+    'enabled' => env('PINECONE_ENABLED', true),
+    'simulate' => env('PINECONE_SIMULATE', false),
+
     'api_key' => env('PINECONE_API_KEY'),
-    'project_id' => env('PINECONE_PROJECT_ID'),
     'environment' => env('PINECONE_ENVIRONMENT'),
 
-    'index' => [
-        'name' => env('PINECONE_INDEX', 'creative-matching'),
-        'dimension' => (int) env('PINECONE_DIMENSION', 1536),
-        'metric' => env('PINECONE_METRIC', 'cosine'),
-        'namespace' => env('PINECONE_NAMESPACE', 'default'),
-        'host' => env('PINECONE_INDEX_HOST'),
-        'pod_type' => env('PINECONE_POD_TYPE'),
-    ],
+    'index' => env('PINECONE_INDEX', 'creative-matching'),
+    'namespace' => env('PINECONE_NAMESPACE', 'default'),
 
-    'timeout' => (int) env('PINECONE_HTTP_TIMEOUT', 10),
-    'simulate' => env('PINECONE_SIMULATE', false),
+    'dimension' => (int) env('PINECONE_DIMENSION', 1536),
+    'metric' => env('PINECONE_METRIC', 'cosine'),
+    'pod_type' => env('PINECONE_POD_TYPE', 'p1.x1'),
 ];

@@ -2,50 +2,41 @@
 
 namespace App\Services\Pinecone;
 
-use Illuminate\Http\Client\Factory as HttpFactory;
-use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
+use Probots\Pinecone\Client as PineconeClient;
 use Psr\Log\LoggerInterface;
 
 class PineconeService
 {
-    /**
-     * @param  array<string, mixed>  $config
-     */
     public function __construct(
-        private readonly array $config,
-        private readonly HttpFactory $http,
+        private readonly PineconeClient $client,
         private readonly LoggerInterface $logger,
     ) {
     }
 
     public function isEnabled(): bool
     {
-        return (bool) ($this->config['enabled'] ?? false)
-            && filled($this->config['api_key'] ?? null)
-            && filled(Arr::get($this->config, 'index.host'))
-            && ! $this->shouldSimulate();
+        return (bool) config('pinecone.enabled', false);
     }
 
     public function shouldSimulate(): bool
     {
-        return (bool) ($this->config['simulate'] ?? false);
+        return (bool) config('pinecone.simulate', false);
     }
 
     public function indexName(): string
     {
-        return (string) Arr::get($this->config, 'index.name', 'creative-matching');
+        return (string) config('pinecone.index', 'creative-matching');
     }
 
     public function indexNamespace(): string
     {
-        return (string) Arr::get($this->config, 'index.namespace', 'default');
+        return (string) config('pinecone.namespace', 'default');
     }
 
     public function embedDimension(): int
     {
-        return (int) Arr::get($this->config, 'index.dimension', 1536);
+        return (int) config('pinecone.dimension', 1536);
     }
 
     /**
@@ -54,6 +45,8 @@ class PineconeService
     public function createIndex(?array $overrides = null): bool
     {
         if ($this->shouldSimulate()) {
+            $this->logger->info('Pinecone simulation: Skipping index creation.');
+
             return true;
         }
 
@@ -61,35 +54,34 @@ class PineconeService
             return false;
         }
 
-        $payload = array_merge(
-            [
-                'name' => $this->indexName(),
-                'dimension' => $this->embedDimension(),
-                'metric' => Arr::get($this->config, 'index.metric', 'cosine'),
-            ],
-            $overrides ?? []
-        );
+        $indexName = $this->indexName();
+        $indexes = $this->client->index()->list();
 
-        if ($podType = Arr::get($this->config, 'index.pod_type')) {
-            $payload['pod_type'] = $podType;
-        }
-
-        /** @var Response $response */
-        $response = $this->http->withHeaders($this->headers())
-            ->withOptions(['timeout' => $this->timeout()])
-            ->post($this->controllerEndpoint().'/databases', $payload);
-
-        if ($response->successful() || $response->status() === 409) {
+        if (in_array($indexName, $indexes)) {
             return true;
         }
 
-        $this->logger->warning('Pinecone index creation failed.', [
-            'payload' => $payload,
-            'status' => $response->status(),
-            'body' => $response->json(),
-        ]);
+        $options = array_merge([
+            'dimension' => $this->embedDimension(),
+            'metric' => config('pinecone.metric', 'cosine'),
+            'pod_type' => config('pinecone.pod_type', 'p1.x1'),
+        ], $overrides ?? []);
 
-        return false;
+        try {
+            $this->client->index($indexName)->create(
+                dimension: $options['dimension'],
+                metric: $options['metric'],
+                podType: $options['pod_type']
+            );
+        } catch (\Exception $e) {
+            $this->logger->warning('Pinecone index creation failed.', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -102,32 +94,20 @@ class PineconeService
         }
 
         if ($this->shouldSimulate() || ! $this->isEnabled()) {
-            $this->logger->info('Skipping Pinecone upsert (simulation or disabled).', [
-                'count' => count($vectors),
-            ]);
+            $this->logger->info('Pinecone simulation: Skipping vector upsert.', ['vector_count' => count($vectors)]);
 
             return true;
         }
 
-        $endpoint = $this->indexEndpoint('/vectors/upsert');
-
-        if ($endpoint === null) {
-            return false;
-        }
-
-        $payload = [
-            'vectors' => $vectors,
-            'namespace' => $namespace ?? $this->indexNamespace(),
-        ];
-
-        $response = $this->http->withHeaders($this->headers())
-            ->withOptions(['timeout' => $this->timeout()])
-            ->post($endpoint, $payload);
-
-        if (! $response->successful()) {
-            $this->logger->error('Failed to upsert vectors to Pinecone.', [
-                'status' => $response->status(),
-                'body' => $response->json(),
+        try {
+            $this->client
+                ->index($this->indexName())
+                ->vectors()
+                ->namespace($namespace ?? $this->indexNamespace())
+                ->upsert($vectors);
+        } catch (\Exception $e) {
+            $this->logger->error('Pinecone vector upsert failed.', [
+                'message' => $e->getMessage(),
             ]);
 
             return false;
@@ -146,34 +126,27 @@ class PineconeService
             return [];
         }
 
-        $endpoint = $this->indexEndpoint('/query');
+        try {
+            $response = $this->client
+                ->index($this->indexName())
+                ->vectors()
+                ->namespace(Arr::get($options, 'namespace', $this->indexNamespace()))
+                ->query(
+                    vector: $vector,
+                    topK: Arr::get($options, 'topK', 10),
+                    includeMetadata: Arr::get($options, 'includeMetadata', true),
+                    includeValues: Arr::get($options, 'includeValues', false),
+                    filter: Arr::get($options, 'filter')
+                );
 
-        if ($endpoint === null) {
-            return [];
-        }
-
-        $payload = array_merge([
-            'vector' => $vector,
-            'topK' => Arr::get($options, 'topK', 10),
-            'namespace' => Arr::get($options, 'namespace', $this->indexNamespace()),
-            'includeMetadata' => Arr::get($options, 'includeMetadata', true),
-            'includeValues' => Arr::get($options, 'includeValues', false),
-        ], Arr::except($options, ['topK', 'namespace', 'includeMetadata', 'includeValues']));
-
-        $response = $this->http->withHeaders($this->headers())
-            ->withOptions(['timeout' => $this->timeout()])
-            ->post($endpoint, $payload);
-
-        if (! $response->successful()) {
-            $this->logger->error('Pinecone query failed.', [
-                'status' => $response->status(),
-                'body' => $response->json(),
+            return $response->json();
+        } catch (\Exception $e) {
+            $this->logger->error('Pinecone vector query failed.', [
+                'message' => $e->getMessage(),
             ]);
-
-            return [];
         }
 
-        return $response->json() ?? [];
+        return [];
     }
 
     /**
@@ -186,72 +159,25 @@ class PineconeService
         }
 
         if ($this->shouldSimulate() || ! $this->isEnabled()) {
-            $this->logger->info('Skipping Pinecone delete (simulation or disabled).', [
-                'count' => count($ids),
-            ]);
+            $this->logger->info('Pinecone simulation: Skipping vector deletion.', ['id_count' => count($ids)]);
 
             return true;
         }
 
-        $endpoint = $this->indexEndpoint('/vectors/delete');
-
-        if ($endpoint === null) {
-            return false;
-        }
-
-        $payload = [
-            'ids' => $ids,
-            'namespace' => $namespace ?? $this->indexNamespace(),
-        ];
-
-        $response = $this->http->withHeaders($this->headers())
-            ->withOptions(['timeout' => $this->timeout()])
-            ->post($endpoint, $payload);
-
-        if (! $response->successful()) {
-            $this->logger->error('Failed to delete vectors from Pinecone.', [
-                'status' => $response->status(),
-                'body' => $response->json(),
+        try {
+            $this->client
+                ->index($this->indexName())
+                ->vectors()
+                ->namespace($namespace ?? $this->indexNamespace())
+                ->delete($ids);
+        } catch (\Exception $e) {
+            $this->logger->error('Pinecone vector deletion failed.', [
+                'message' => $e->getMessage(),
             ]);
 
             return false;
         }
 
         return true;
-    }
-
-    private function headers(): array
-    {
-        return [
-            'Api-Key' => (string) ($this->config['api_key'] ?? ''),
-            'Content-Type' => 'application/json',
-        ];
-    }
-
-    private function timeout(): int
-    {
-        return (int) ($this->config['timeout'] ?? 10);
-    }
-
-    private function indexEndpoint(string $path = ''): ?string
-    {
-        $host = Arr::get($this->config, 'index.host');
-
-        if (blank($host)) {
-            return null;
-        }
-
-        if (! Str::startsWith($host, ['http://', 'https://'])) {
-            $host = 'https://'.$host;
-        }
-
-        return rtrim($host, '/').$path;
-    }
-
-    private function controllerEndpoint(): string
-    {
-        $environment = Arr::get($this->config, 'environment');
-
-        return sprintf('https://controller.%s.pinecone.io', $environment ?: 'us-east1-gcp');
     }
 }

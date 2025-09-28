@@ -84,26 +84,57 @@ class BedrockEmbeddingService {
 
 ### Vector Database Schema (Pinecone Example)
 ```json
+### Vector Database Schema (Pinecone Example)
+```json
 {
-  "indexes": [
+  "index": "creative-matching",
+  "namespace": "default",
+  "vectors": [
     {
-      "name": "creative-profiles",
-      "dimension": 1536,
-      "metric": "cosine",
-      "metadata_config": {
-        "indexed": ["userId", "skills", "location", "experience_level"]
-      }
+      "id": "job::123",
+      "values": [0.1, 0.2, ...],
+      "metadata": { "entity_type": "job", "job_id": 123, "category": "design" }
     },
     {
-      "name": "projects",
-      "dimension": 1536, 
-      "metric": "cosine",
-      "metadata_config": {
-        "indexed": ["projectId", "budget_min", "budget_max", "category", "location"]
-      }
+      "id": "creative_profile::456",
+      "values": [0.3, 0.4, ...],
+      "metadata": { "entity_type": "creative_profile", "profile_id": 456 }
     }
   ]
 }
+```
+
+### Matching Algorithm Flow
+1. **Input Processing**: Extract embeddings for search query/profile
+2. **Vector Search**: Query Pinecone for similar vectors
+3. **Hybrid Ranking**: Combine semantic similarity + traditional filters
+4. **Confidence Scoring**: Calculate match probability
+5. **Results Formatting**: Return ranked matches with explanations
+
+### Laravel Integration Points
+- **Jobs**: `GenerateEmbeddingsJob`, `UpdateProfileEmbeddingsJob`
+- **Services**: `MatchingService`, `BedrockService`, `PineconeService` (wrapper for `probots-io/pinecone-php`)
+- **Controllers**: `MatchController`, `SearchController`, `RecommendationController`
+- **Commands**: `php artisan embeddings:generate`, `php artisan vectors:sync`
+
+## Environment Configuration
+```env
+# AWS Bedrock
+AWS_BEDROCK_REGION=us-east-1
+AWS_BEDROCK_MODEL_ID=amazon.titan-embed-text-v1
+AWS_BEDROCK_CONTENT_MODEL=anthropic.claude-3-sonnet-20240229-v1:0
+
+# Pinecone Vector Database
+PINECONE_API_KEY=your-pinecone-key
+PINECONE_ENVIRONMENT=gcp-starter
+```
+
+## Development Priorities
+1. **MVP Speed**: Use Pinecone for fastest setup, migrate to Weaviate later if needed
+2. **Cost Optimization**: Cache embeddings, batch processing, rate limiting
+3. **Performance**: Async processing, result caching, efficient vector queries
+4. **Scalability**: Queue-based embedding generation, horizontal vector scaling
+
 ```
 
 ### Matching Algorithm Flow

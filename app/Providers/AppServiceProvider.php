@@ -7,13 +7,12 @@ use App\Models\Job;
 use App\Policies\ApplicationPolicy;
 use App\Policies\JobPolicy;
 use App\Services\Bedrock\BedrockService;
-use App\Services\Pinecone\PineconeService;
-use Aws\BedrockRuntime\BedrockRuntimeClient;
-use Illuminate\Http\Client\Factory as HttpFactory;
-use Laravel\Scout\Scout;
-use Meilisearch\Client as MeilisearchClient;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Scout\Scout;
+use Meilisearch\Client as MeilisearchClient;
+use Probots\Pinecone\Client as PineconeClient;
 use Psr\Log\LoggerInterface;
 
 class AppServiceProvider extends ServiceProvider
@@ -25,17 +24,10 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(BedrockService::class, function ($app): BedrockService {
             $config = config('bedrock');
-
             $client = null;
 
             if (($config['enabled'] ?? false) === true) {
-                $client = new BedrockRuntimeClient([
-                    'region' => $config['region'] ?? env('AWS_DEFAULT_REGION', 'us-east-1'),
-                    'version' => 'latest',
-                    'http' => [
-                        'timeout' => $config['timeout'] ?? 15,
-                    ],
-                ]);
+                $client = App::make('aws')->createClient('BedrockRuntime');
             }
 
             return new BedrockService(
@@ -63,11 +55,10 @@ class AppServiceProvider extends ServiceProvider
             });
         }
 
-        $this->app->singleton(PineconeService::class, function ($app): PineconeService {
-            return new PineconeService(
-                $app['config']->get('pinecone', []),
-                $app->make(HttpFactory::class),
-                $app->make(LoggerInterface::class),
+        $this->app->singleton(PineconeClient::class, function (): PineconeClient {
+            return new PineconeClient(
+                config('pinecone.api_key'),
+                config('pinecone.environment'),
             );
         });
     }
