@@ -3,11 +3,16 @@
 use App\Http\Controllers\Admin\OpportunityOwnerVerificationController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\CreativeDashboardController;
+use App\Http\Controllers\CreativeSearchPageController;
 use App\Http\Controllers\JobBrowseController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\JobDescriptionGeneratorController;
 use App\Http\Controllers\OpportunityOwnerDashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Search\CreativeSearchController;
+use App\Http\Controllers\Search\SemanticSearchController;
+use App\Models\Job;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -38,6 +43,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('dashboard/opportunity-owner', [OpportunityOwnerDashboardController::class, 'index'])->name('dashboard.opportunity-owner');
 
         Route::prefix('opportunity-owner')->name('opportunity-owner.')->group(function () {
+            Route::get('creatives', [CreativeSearchPageController::class, 'index'])->name('creatives.index');
             Route::post('jobs/description-helper', JobDescriptionGeneratorController::class)
                 ->name('jobs.generate-description');
             Route::patch('jobs/{job}/publish', [JobController::class, 'publish'])->name('jobs.publish');
@@ -45,6 +51,32 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::patch('jobs/{job}/applications/{application}', [ApplicationController::class, 'update'])->name('jobs.applications.update');
             Route::resource('jobs', JobController::class)->except(['show']);
         });
+    });
+
+    // Search API endpoints (moved from api.php for proper session auth)
+    Route::prefix('api')->name('api.')->group(function () {
+        Route::get('search/personalized', SemanticSearchController::class)
+            ->name('search.personalized');
+
+        Route::middleware('user.type:opportunity_owner')
+            ->get('search/creatives', CreativeSearchController::class)
+            ->name('search.creatives');
+
+        Route::middleware('user.type:opportunity_owner')
+            ->get('jobs/{job}/recommendations', function (Request $request, Job $job) {
+                // Redirect to creative search with job context
+                $query = $job->title;
+                if ($job->skills && is_array($job->skills)) {
+                    $query .= ' ' . implode(' ', $job->skills);
+                }
+
+                return redirect("/api/search/creatives?" . http_build_query([
+                    'q' => $query,
+                    'job_id' => $job->id,
+                    'limit' => 10,
+                ]));
+            })
+            ->name('jobs.recommendations');
     });
 
     // Admin routes

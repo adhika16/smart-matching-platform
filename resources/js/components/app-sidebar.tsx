@@ -59,6 +59,14 @@ export function AppSidebar() {
         });
     }
 
+    if (userType === 'opportunity_owner') {
+        mainNavItems.push({
+            title: 'Search Creatives',
+            href: opportunityOwnerRoutes.creatives.index.url(),
+            icon: Search,
+        });
+    }
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>

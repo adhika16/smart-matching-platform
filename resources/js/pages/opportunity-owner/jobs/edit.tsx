@@ -7,6 +7,7 @@ import JobForm, { type JobFormValues } from '@/components/jobs/job-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import AppLayout from '@/layouts/app-layout';
 
 interface ApplicationListItem {
@@ -18,6 +19,14 @@ interface ApplicationListItem {
         id: number;
         name: string;
         email: string;
+    };
+    ai_match?: {
+        score: number;
+        breakdown: {
+            profile_match: number;
+            skills_match: number;
+            experience_match: number;
+        };
     };
 }
 
@@ -34,6 +43,7 @@ interface EditJobProps {
     };
     compensationTypes: Array<{ value: string; label: string }>;
     applications: ApplicationListItem[];
+    hasSmartRanking: boolean;
     applicationStatuses: StatusOption[];
     taxonomy: {
         skills: Array<{ value: string; label: string }>;
@@ -59,7 +69,7 @@ const statusCopy: Record<'draft' | 'published' | 'archived', { label: string; de
     },
 };
 
-export default function Edit({ job, compensationTypes, applications, applicationStatuses, taxonomy }: EditJobProps) {
+export default function EditJob({ job, compensationTypes, applications, hasSmartRanking, applicationStatuses, taxonomy }: EditJobProps): ReactNode {
     const statusBadgeVariant: Record<ApplicationListItem['status'], 'outline' | 'default' | 'secondary'> = {
         pending: 'outline',
         shortlisted: 'default',
@@ -143,11 +153,23 @@ export default function Edit({ job, compensationTypes, applications, application
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center justify-between gap-4">
-                            <span>Applications</span>
+                            <div className="flex items-center gap-2">
+                                <span>Applications</span>
+                                {hasSmartRanking && applications.length > 0 && (
+                                    <Badge variant="default" className="bg-primary/10 text-primary border-primary/20 text-xs">
+                                        AI Ranked
+                                    </Badge>
+                                )}
+                            </div>
                             <Badge variant="outline">{applications.length}</Badge>
                         </CardTitle>
                         <p className="text-sm text-muted-foreground">
                             Review and update the status of creatives who have applied to this opportunity.
+                            {hasSmartRanking && applications.length > 0 && (
+                                <span className="block mt-1 text-primary">
+                                    Applications are ranked by AI matching score for better decision making.
+                                </span>
+                            )}
                         </p>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -159,55 +181,96 @@ export default function Edit({ job, compensationTypes, applications, application
                             applications.map((application) => (
                                 <div
                                     key={application.id}
-                                    className="rounded-md border p-4 md:flex md:items-start md:justify-between md:gap-6"
+                                    className="rounded-md border p-4"
                                 >
-                                    <div className="space-y-2">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <h3 className="text-lg font-semibold">{application.applicant.name}</h3>
-                                            <Badge variant={statusBadgeVariant[application.status]} className="capitalize">
-                                                {application.status}
-                                            </Badge>
-                                        </div>
-                                        <p className="text-sm text-muted-foreground">{application.applicant.email}</p>
-                                        {application.submitted_at && (
-                                            <p className="text-xs text-muted-foreground">
-                                                Applied {new Date(application.submitted_at).toLocaleString()}
-                                            </p>
-                                        )}
-                                        {application.cover_letter && (
-                                            <div className="rounded-md bg-muted p-3 text-sm">
-                                                <p className="whitespace-pre-line">{application.cover_letter}</p>
+                                    <div className="md:flex md:items-start md:justify-between md:gap-6">
+                                        <div className="space-y-2 flex-1">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <h3 className="text-lg font-semibold">{application.applicant.name}</h3>
+                                                <Badge variant={statusBadgeVariant[application.status]} className="capitalize">
+                                                    {application.status}
+                                                </Badge>
+                                                {application.ai_match && (
+                                                    <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-700">
+                                                        {Math.round(application.ai_match.score * 100)}% AI Match
+                                                    </Badge>
+                                                )}
                                             </div>
-                                        )}
-                                    </div>
+                                            <p className="text-sm text-muted-foreground">{application.applicant.email}</p>
+                                            {application.submitted_at && (
+                                                <p className="text-xs text-muted-foreground">
+                                                    Applied {new Date(application.submitted_at).toLocaleString()}
+                                                </p>
+                                            )}
 
-                                    <Form
-                                        method="patch"
-                                        action={`/opportunity-owner/jobs/${job.id}/applications/${application.id}`}
-                                        className="mt-4 flex flex-col gap-2 md:mt-0 md:w-56"
-                                    >
-                                        {({ processing }) => (
-                                            <>
-                                                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                                    Update status
-                                                </label>
-                                                <select
-                                                    name="status"
-                                                    defaultValue={application.status}
-                                                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                                >
-                                                    {applicationStatuses.map((option) => (
-                                                        <option key={option.value} value={option.value}>
-                                                            {option.label}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                <Button type="submit" size="sm" disabled={processing}>
-                                                    {processing ? 'Saving…' : 'Save' }
-                                                </Button>
-                                            </>
-                                        )}
-                                    </Form>
+                                            {/* AI Match Breakdown */}
+                                            {application.ai_match && (
+                                                <div className="mt-3 p-3 bg-muted/50 rounded-md">
+                                                    <p className="text-xs font-medium text-muted-foreground mb-2">AI Matching Breakdown</p>
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center justify-between text-xs">
+                                                            <span>Profile Match</span>
+                                                            <span>{Math.round(application.ai_match.breakdown.profile_match * 100)}%</span>
+                                                        </div>
+                                                        <Progress
+                                                            value={application.ai_match.breakdown.profile_match * 100}
+                                                            className="h-1"
+                                                        />
+                                                        <div className="flex items-center justify-between text-xs">
+                                                            <span>Skills Match</span>
+                                                            <span>{Math.round(application.ai_match.breakdown.skills_match * 100)}%</span>
+                                                        </div>
+                                                        <Progress
+                                                            value={application.ai_match.breakdown.skills_match * 100}
+                                                            className="h-1"
+                                                        />
+                                                        <div className="flex items-center justify-between text-xs">
+                                                            <span>Experience Level</span>
+                                                            <span>{Math.round(application.ai_match.breakdown.experience_match * 100)}%</span>
+                                                        </div>
+                                                        <Progress
+                                                            value={application.ai_match.breakdown.experience_match * 100}
+                                                            className="h-1"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {application.cover_letter && (
+                                                <div className="rounded-md bg-muted p-3 text-sm">
+                                                    <p className="whitespace-pre-line">{application.cover_letter}</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <Form
+                                            method="patch"
+                                            action={`/opportunity-owner/jobs/${job.id}/applications/${application.id}`}
+                                            className="mt-4 flex flex-col gap-2 md:mt-0 md:w-56"
+                                        >
+                                            {({ processing }) => (
+                                                <>
+                                                    <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                                        Update status
+                                                    </label>
+                                                    <select
+                                                        name="status"
+                                                        defaultValue={application.status}
+                                                        className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                                    >
+                                                        {applicationStatuses.map((option) => (
+                                                            <option key={option.value} value={option.value}>
+                                                                {option.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    <Button type="submit" size="sm" disabled={processing}>
+                                                        {processing ? 'Saving…' : 'Save' }
+                                                    </Button>
+                                                </>
+                                            )}
+                                        </Form>
+                                    </div>
                                 </div>
                             ))
                         )}

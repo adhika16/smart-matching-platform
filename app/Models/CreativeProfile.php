@@ -6,10 +6,11 @@ use App\Jobs\SyncCreativeProfileEmbeddings;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Laravel\Scout\Searchable;
 
 class CreativeProfile extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable;
 
     protected static function booted(): void
     {
@@ -71,5 +72,37 @@ class CreativeProfile extends Model
     public function isComplete(): bool
     {
         return $this->getCompletionPercentage() >= 80;
+    }
+
+    /**
+     * Get the indexable data array for the model.
+     */
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'bio' => $this->bio,
+            'skills' => $this->skills,
+            'location' => $this->location,
+            'experience_level' => $this->experience_level,
+            'user_name' => $this->user->name ?? '',
+            'user_email' => $this->user->email ?? '',
+        ];
+    }
+
+    /**
+     * Get the name of the index associated with the model.
+     */
+    public function searchableAs(): string
+    {
+        return 'creative_profiles';
+    }
+
+    /**
+     * Determine if the model should be searchable.
+     */
+    public function shouldBeSearchable(): bool
+    {
+        return $this->user?->user_type === 'creative' && $this->available_for_work;
     }
 }

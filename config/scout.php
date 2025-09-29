@@ -38,6 +38,17 @@ return [
                     'budget_max',
                 ],
             ],
+            'creative_profiles' => [
+                'filterableAttributes' => [
+                    'skills',
+                    'location',
+                    'experience_level',
+                    'hourly_rate',
+                ],
+                'sortableAttributes' => [
+                    'hourly_rate',
+                ],
+            ],
         ],
     ],
 

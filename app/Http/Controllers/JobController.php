@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Application;
 use App\Models\Job;
+use App\Services\Matching\ApplicationRankingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -94,25 +96,78 @@ class JobController extends Controller
     /**
      * Show the form for editing the specified job.
      */
-    public function edit(Job $job): Response
+    public function edit(Job $job, ApplicationRankingService $rankingService): Response
     {
         $this->authorize('update', $job);
 
-        $applications = $job->applications()
-            ->with('applicant')
+        $rawApplications = $job->applications()
+            ->with(['applicant', 'applicant.creativeProfile'])
             ->latest()
             ->get()
-            ->map(fn ($application) => [
-                'id' => $application->id,
-                'status' => $application->status,
-                'cover_letter' => $application->cover_letter,
-                'submitted_at' => $application->created_at?->toIso8601String(),
-                'applicant' => [
-                    'id' => $application->applicant->id,
-                    'name' => $application->applicant->name,
-                    'email' => $application->applicant->email,
-                ],
-            ]);
+            ->filter(function ($application) {
+                // Filter out applications where the user no longer exists
+                return $application->applicant !== null;
+            });
+
+        // Apply smart ranking if there are applications
+        $rankedApplications = collect();
+        $hasSmartRanking = false;
+
+        if ($rawApplications->isNotEmpty()) {
+            try {
+                $ranked = $rankingService->rankApplicationsForJob($job, $rawApplications);
+                $hasSmartRanking = true;
+
+                $rankedApplications = $ranked->map(function ($item) {
+                    $application = $item['application'];
+                    return [
+                        'id' => $application->id,
+                        'status' => $application->status,
+                        'cover_letter' => $application->cover_letter,
+                        'submitted_at' => $application->created_at?->toIso8601String(),
+                        'applicant' => [
+                            'id' => $application->applicant->id,
+                            'name' => $application->applicant->name,
+                            'email' => $application->applicant->email,
+                        ],
+                    'ai_match' => [
+                        'score' => $item['score'],
+                        'breakdown' => $item['breakdown'],
+                    ],
+                ];
+            });
+            } catch (\Exception $e) {
+                // Log error but don't break the page - show applications without AI ranking
+                Log::error('AI ranking service failed', [
+                    'job_id' => $job->id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                // Fallback to showing applications without AI ranking
+                $rankedApplications = $rawApplications->map(function ($application) {
+                    return [
+                        'id' => $application->id,
+                        'status' => $application->status,
+                        'cover_letter' => $application->cover_letter,
+                        'submitted_at' => $application->created_at?->toIso8601String(),
+                        'applicant' => [
+                            'id' => $application->applicant->id,
+                            'name' => $application->applicant->name,
+                            'email' => $application->applicant->email,
+                        ],
+                        'ai_match' => [
+                            'score' => 0,
+                            'breakdown' => [
+                                'profile_match' => 0,
+                                'skills_match' => 0,
+                                'experience_match' => 0,
+                            ],
+                        ],
+                    ];
+                });
+                $hasSmartRanking = false;
+            }
+        }
 
         return Inertia::render('opportunity-owner/jobs/edit', [
             'job' => [
@@ -141,7 +196,8 @@ class JobController extends Controller
             ],
             'compensationTypes' => $this->compensationTypes(),
             'taxonomy' => $this->taxonomy(),
-            'applications' => $applications,
+            'applications' => $rankedApplications,
+            'hasSmartRanking' => $hasSmartRanking,
             'applicationStatuses' => [
                 ['value' => Application::STATUS_PENDING, 'label' => 'Pending review'],
                 ['value' => Application::STATUS_SHORTLISTED, 'label' => 'Shortlisted'],

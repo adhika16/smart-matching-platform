@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { Building2, Users, CheckCircle2, Settings, Plus, AlertTriangle, ArrowUpRight, Mail } from 'lucide-react';
+import { Building2, Users, CheckCircle2, Settings, Plus, AlertTriangle, ArrowUpRight, Mail, Briefcase, Search } from 'lucide-react';
 import opportunityOwnerRoutes from '@/routes/opportunity-owner';
 import creativeRoutes from '@/routes/creative';
 
@@ -224,14 +224,16 @@ export default function OpportunityOwner({
 
                             <Button asChild variant="outline" className="w-full justify-start">
                                 <Link href={opportunityOwnerRoutes.jobs.index.url()}>
-                                    <Users className="mr-2 h-4 w-4" />
+                                    <Briefcase className="mr-2 h-4 w-4" />
                                     Manage jobs
                                 </Link>
                             </Button>
 
-                            <Button variant="outline" className="w-full justify-start" disabled>
-                                <Users className="mr-2 h-4 w-4" />
-                                Browse Talent (Coming Soon)
+                            <Button asChild variant="outline" className="w-full justify-start">
+                                <Link href="/opportunity-owner/creatives">
+                                    <Search className="mr-2 h-4 w-4" />
+                                    Search Creatives
+                                </Link>
                             </Button>
                         </CardContent>
                     </Card>
