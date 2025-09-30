@@ -44,6 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::prefix('opportunity-owner')->name('opportunity-owner.')->group(function () {
             Route::get('creatives', [CreativeSearchPageController::class, 'index'])->name('creatives.index');
+            Route::get('creatives/{creative}', [CreativeSearchPageController::class, 'show'])->name('creatives.show');
             Route::post('jobs/description-helper', JobDescriptionGeneratorController::class)
                 ->name('jobs.generate-description');
             Route::patch('jobs/{job}/publish', [JobController::class, 'publish'])->name('jobs.publish');

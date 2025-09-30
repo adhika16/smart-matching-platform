@@ -36,7 +36,7 @@ class PineconeService
 
     public function embedDimension(): int
     {
-        return (int) config('pinecone.dimension', 1536);
+        return (int) config('pinecone.dimension', 1024);
     }
 
     /**
@@ -55,9 +55,9 @@ class PineconeService
         }
 
         $indexName = $this->indexName();
-        $indexes = $this->client->index()->list();
+        $response = $this->client->control()->index($indexName)->describe()->json();
 
-        if (in_array($indexName, $indexes)) {
+        if ($response['status']['ready']) {
             return true;
         }
 
@@ -68,10 +68,10 @@ class PineconeService
         ], $overrides ?? []);
 
         try {
-            $this->client->index($indexName)->create(
+            $this->client->control()->index($indexName)->createPod(
                 dimension: $options['dimension'],
                 metric: $options['metric'],
-                podType: $options['pod_type']
+                pod_type: $options['pod_type']
             );
         } catch (\Exception $e) {
             $this->logger->warning('Pinecone index creation failed.', [
@@ -101,9 +101,8 @@ class PineconeService
 
         try {
             $this->client
-                ->index($this->indexName())
+                ->data()
                 ->vectors()
-                ->namespace($namespace ?? $this->indexNamespace())
                 ->upsert($vectors);
         } catch (\Exception $e) {
             $this->logger->error('Pinecone vector upsert failed.', [
@@ -128,15 +127,14 @@ class PineconeService
 
         try {
             $response = $this->client
-                ->index($this->indexName())
+                ->data()
                 ->vectors()
-                ->namespace(Arr::get($options, 'namespace', $this->indexNamespace()))
                 ->query(
                     vector: $vector,
                     topK: Arr::get($options, 'topK', 10),
                     includeMetadata: Arr::get($options, 'includeMetadata', true),
                     includeValues: Arr::get($options, 'includeValues', false),
-                    filter: Arr::get($options, 'filter')
+                    filter: Arr::get($options, 'filter', [])
                 );
 
             return $response->json();
@@ -166,9 +164,8 @@ class PineconeService
 
         try {
             $this->client
-                ->index($this->indexName())
+                ->data()
                 ->vectors()
-                ->namespace($namespace ?? $this->indexNamespace())
                 ->delete($ids);
         } catch (\Exception $e) {
             $this->logger->error('Pinecone vector deletion failed.', [

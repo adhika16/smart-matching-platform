@@ -122,7 +122,7 @@ class BedrockEmbeddingService {
 # AWS Bedrock
 AWS_BEDROCK_REGION=us-east-1
 AWS_BEDROCK_MODEL_ID=amazon.titan-embed-text-v1
-AWS_BEDROCK_CONTENT_MODEL=anthropic.claude-3-sonnet-20240229-v1:0
+AWS_BEDROCK_CONTENT_MODEL=amazon.titan-text-lite-v1
 
 # Pinecone Vector Database
 PINECONE_API_KEY=your-pinecone-key
@@ -155,7 +155,7 @@ PINECONE_ENVIRONMENT=gcp-starter
 # AWS Bedrock
 AWS_BEDROCK_REGION=us-east-1
 AWS_BEDROCK_MODEL_ID=amazon.titan-embed-text-v1
-AWS_BEDROCK_CONTENT_MODEL=anthropic.claude-3-sonnet-20240229-v1:0
+AWS_BEDROCK_CONTENT_MODEL=amazon.titan-text-lite-v1
 
 # Pinecone Vector Database
 PINECONE_API_KEY=your-pinecone-key

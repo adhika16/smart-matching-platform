@@ -95,11 +95,18 @@ export default function BrowseJobs({ jobs: initialJobs, filters, auth }: PagePro
         try {
             const params = new URLSearchParams({
                 q: formData.search,
-                ...(formData.location && { 'filters[location]': formData.location }),
-                ...(formData.tag && { 'filters[category]': formData.tag }),
-                ...(formData.remote && { 'filters[remote]': '1' }),
                 limit: '20',
             });
+
+            if (formData.location) {
+                params.append('filters[location]', formData.location);
+            }
+            if (formData.tag) {
+                params.append('filters[category]', formData.tag);
+            }
+            if (formData.remote) {
+                params.append('filters[remote]', '1');
+            }
 
             const response = await fetch(`/api/search/personalized?${params}`, {
                 headers: {

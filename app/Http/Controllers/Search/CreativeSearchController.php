@@ -167,20 +167,24 @@ class CreativeSearchController extends Controller
         array $filters,
         int $limit
     ): array {
-        // Query Pinecone for creative profiles (assuming namespace 'creatives')
-        $response = $pinecone->queryVectors($queryVector, [
-            'namespace' => 'creatives',
+        $pineconeFilter = $this->buildPineconeFilter($filters);
+
+        $queryOptions = [
             'topK' => $limit,
             'includeValues' => false,
             'includeMetadata' => true,
-        ]);
+            'filter' => $pineconeFilter,
+        ];
+
+        // Query Pinecone for creative profiles
+        $response = $pinecone->queryVectors($queryVector, $queryOptions);
 
         $matches = [];
         foreach ($response['matches'] ?? [] as $match) {
             $profileId = (int) $match['id'];
             $profile = CreativeProfile::find($profileId);
 
-            if ($profile && $this->matchesFilters($profile, $filters)) {
+            if ($profile) {
                 $matches[] = [
                     'profile' => $profile,
                     'score' => $match['score'],
@@ -189,6 +193,29 @@ class CreativeSearchController extends Controller
         }
 
         return $matches;
+    }
+
+    private function buildPineconeFilter(array $filters): array
+    {
+        $pineconeFilter = [
+            ['entity_type' => ['$eq' => 'creative_profile']],
+        ];
+
+        if (! empty($filters['skills']) && is_array($filters['skills'])) {
+            $pineconeFilter[] = ['skills' => ['$in' => $filters['skills']]];
+        }
+
+        if (! empty($filters['experience_level'])) {
+            $pineconeFilter[] = ['experience_level' => ['$eq' => $filters['experience_level']]];
+        }
+
+        // Note: Pinecone doesn't support 'LIKE' or full-text search on metadata.
+        // We can't directly translate the location 'LIKE' filter.
+        // If location metadata is stored precisely, we could use an '$eq' filter.
+        // For this implementation, we'll omit location from the Pinecone filter
+        // and rely on the broader semantic match, with keyword search handling location.
+
+        return count($pineconeFilter) > 1 ? ['$and' => $pineconeFilter] : $pineconeFilter[0];
     }
 
     private function cachedCreativeMatches(

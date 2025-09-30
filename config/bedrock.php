@@ -11,7 +11,7 @@ return [
     ],
 
     'content' => [
-        'model_id' => env('AWS_BEDROCK_CONTENT_MODEL_ID', 'deepseek-llm-r1-distill-qwen-7b'),
+        'model_id' => env('AWS_BEDROCK_CONTENT_MODEL_ID', 'amazon.titan-text-lite-v1'),
         'max_tokens' => (int) env('AWS_BEDROCK_CONTENT_MAX_TOKENS', 800),
         'temperature' => (float) env('AWS_BEDROCK_CONTENT_TEMPERATURE', 0.3),
     ],

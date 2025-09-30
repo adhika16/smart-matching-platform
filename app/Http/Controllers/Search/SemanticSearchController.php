@@ -86,6 +86,14 @@ class SemanticSearchController extends Controller
             $query->where('category', $filters['category']);
         }
 
+        if (! empty($filters['location'])) {
+            $query->where('location', 'LIKE', '%'.$filters['location'].'%');
+        }
+
+        if (! empty($filters['remote'])) {
+            $query->where('is_remote', true);
+        }
+
         if (! empty($filters['skills']) && is_array($filters['skills'])) {
             $query->where(function (EloquentBuilder $builder) use ($filters): void {
                 foreach ($filters['skills'] as $skill) {
@@ -136,13 +144,14 @@ class SemanticSearchController extends Controller
         $limit = max(1, min($limit, 50));
 
         if ($pinecone->isEnabled()) {
-            $response = $pinecone->queryVectors($queryVector, [
+            $pineconeFilter = $this->buildPineconeJobFilter($filters);
+
+            $queryOptions = [
                 'topK' => $limit,
-                'filter' => [
-                    'entity_type' => 'job',
-                    'status' => ['published'],
-                ],
-            ]);
+                'filter' => $pineconeFilter,
+            ];
+
+            $response = $pinecone->queryVectors($queryVector, $queryOptions);
 
             $matches = Arr::get($response, 'matches', []);
 
@@ -172,6 +181,33 @@ class SemanticSearchController extends Controller
         }
 
         return $this->localSemanticMatches($queryVector, $filters, $limit);
+    }
+
+    private function buildPineconeJobFilter(array $filters): array
+    {
+        $pineconeFilter = [
+            ['entity_type' => ['$eq' => 'job']],
+            ['status' => ['$eq' => 'published']],
+        ];
+
+        if (! empty($filters['category'])) {
+            $pineconeFilter[] = ['category' => ['$eq' => $filters['category']]];
+        }
+
+        if (! empty($filters['remote'])) {
+            $pineconeFilter[] = ['is_remote' => ['$eq' => true]];
+        }
+
+        if (! empty($filters['skills']) && is_array($filters['skills'])) {
+            // Assuming 'skills' in Pinecone metadata is an array of strings
+            $pineconeFilter[] = ['skills' => ['$in' => $filters['skills']]];
+        }
+
+        // Note: Location filtering is complex for Pinecone as it doesn't support LIKE operations
+        // For now, we'll handle location filtering in the local semantic matches fallback
+        // You could implement geo-based filtering if location coordinates are stored in metadata
+
+        return count($pineconeFilter) > 1 ? ['$and' => $pineconeFilter] : $pineconeFilter[0];
     }
 
     /**

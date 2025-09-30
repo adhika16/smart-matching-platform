@@ -24,11 +24,12 @@ return [
 
     'api_key' => env('PINECONE_API_KEY'),
     'environment' => env('PINECONE_ENVIRONMENT'),
+    'index_host' => env('PINECONE_INDEX_HOST'),
 
     'index' => env('PINECONE_INDEX', 'creative-matching'),
     'namespace' => env('PINECONE_NAMESPACE', 'default'),
 
-    'dimension' => (int) env('PINECONE_DIMENSION', 1536),
+    'dimension' => (int) env('PINECONE_DIMENSION', 1024),
     'metric' => env('PINECONE_METRIC', 'cosine'),
     'pod_type' => env('PINECONE_POD_TYPE', 'p1.x1'),
 ];

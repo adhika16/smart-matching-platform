@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { Search, MapPin, User, ExternalLink, Sparkles } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
@@ -91,12 +91,25 @@ export default function SearchCreatives({ jobs, auth }: PageProps) {
         try {
             const params = new URLSearchParams({
                 q: formData.search,
-                ...(formData.location && { 'filters[location]': formData.location }),
-                ...(formData.experience_level && { 'filters[experience_level]': formData.experience_level }),
-                ...(formData.skills && { 'filters[skills][]': formData.skills }),
-                ...(formData.job_id && { job_id: formData.job_id }),
                 limit: '20',
             });
+
+            if (formData.location) {
+                params.append('filters[location]', formData.location);
+            }
+            if (formData.experience_level) {
+                params.append('filters[experience_level]', formData.experience_level);
+            }
+            if (formData.skills) {
+                // Split skills by comma and add each as separate array element
+                const skillsArray = formData.skills.split(',').map(s => s.trim()).filter(s => s);
+                skillsArray.forEach(skill => {
+                    params.append('filters[skills][]', skill);
+                });
+            }
+            if (formData.job_id) {
+                params.append('job_id', formData.job_id);
+            }
 
             const response = await fetch(`/api/search/creatives?${params}`, {
                 headers: {
@@ -392,9 +405,11 @@ export default function SearchCreatives({ jobs, auth }: PageProps) {
                                 <CardFooter className="pt-0 space-y-2">
                                     <div className="w-full space-y-2">
                                         <div className="flex items-center gap-2">
-                                            <Button size="sm" variant="outline" className="flex-1">
-                                                <User className="mr-2 h-4 w-4" />
-                                                View Profile
+                                            <Button size="sm" variant="outline" className="flex-1" asChild>
+                                                <Link href={`/opportunity-owner/creatives/${creative.id}`}>
+                                                    <User className="mr-2 h-4 w-4" />
+                                                    View Profile
+                                                </Link>
                                             </Button>
                                             {creative.portfolio_url && (
                                                 <Button size="sm" variant="outline" asChild>

@@ -22,6 +22,8 @@ class SemanticSearchRequest extends FormRequest
             'semantic_limit' => ['nullable', 'integer', 'min:1', 'max:50'],
             'scope' => ['nullable', 'string', 'in:jobs,profiles'],
             'filters.category' => ['nullable', 'string', 'max:100'],
+            'filters.location' => ['nullable', 'string', 'max:100'],
+            'filters.remote' => ['nullable', 'string', 'in:1'],
             'filters.skills' => ['nullable', 'array'],
             'filters.skills.*' => ['string', 'max:100'],
         ];

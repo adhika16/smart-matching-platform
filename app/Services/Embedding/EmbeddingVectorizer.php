@@ -28,7 +28,7 @@ class EmbeddingVectorizer
         $dimension ??= $this->pinecone->embedDimension();
 
         if ($dimension <= 0) {
-            $dimension = 1536;
+            $dimension = 1024;
         }
 
         $text = trim($text);

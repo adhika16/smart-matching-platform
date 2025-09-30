@@ -106,20 +106,13 @@ class BedrockService
         $payload = [
             'modelId' => Arr::get($this->config, 'content.model_id'),
             'body' => json_encode([
-                'anthropic_version' => 'bedrock-2023-05-31',
-                'messages' => [
-                    [
-                        'role' => 'user',
-                        'content' => [
-                            [
-                                'type' => 'text',
-                                'text' => $prompt,
-                            ],
-                        ],
-                    ],
+                'inputText' => $prompt,
+                'textGenerationConfig' => [
+                    'maxTokenCount' => Arr::get($this->config, 'content.max_tokens', 800),
+                    'temperature' => Arr::get($this->config, 'content.temperature', 0.3),
+                    'stopSequences' => [],
+                    'topP' => 1,
                 ],
-                'max_tokens' => Arr::get($this->config, 'content.max_tokens', 800),
-                'temperature' => Arr::get($this->config, 'content.temperature', 0.3),
             ], JSON_THROW_ON_ERROR),
             'accept' => 'application/json',
             'contentType' => 'application/json',
@@ -129,7 +122,7 @@ class BedrockService
             $result = $this->client->invokeModel($payload);
             $content = $this->getResponseBody($result->get('body'));
             $decoded = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
-            $message = Arr::get($decoded, 'content.0.text');
+            $message = Arr::get($decoded, 'results.0.outputText');
 
             return is_string($message) ? trim($message) : '';
         } catch (AwsException|\JsonException $exception) {

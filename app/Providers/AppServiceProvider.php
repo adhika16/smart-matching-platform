@@ -58,7 +58,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(PineconeClient::class, function (): PineconeClient {
             return new PineconeClient(
                 config('pinecone.api_key'),
-                config('pinecone.environment'),
+                config('pinecone.index_host'),
             );
         });
     }

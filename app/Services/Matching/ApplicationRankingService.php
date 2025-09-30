@@ -30,13 +30,14 @@ class ApplicationRankingService
         $jobVector = $this->generateJobEmbedding($job);
 
         if (empty($jobVector)) {
+            \Log::warning('Job vector is empty for job ID: ' . $job->id);
             return $applications;
         }
 
         // Score each application
         $scoredApplications = $applications->map(function (Application $application) use ($jobVector) {
             // Check if the application has a valid user and creative profile
-            if (!$application->user) {
+            if (!$application->applicant) {
                 return [
                     'application' => $application,
                     'score' => 0.0,
@@ -48,7 +49,7 @@ class ApplicationRankingService
                 ];
             }
 
-            $creative = $application->user->creativeProfile;
+            $creative = $application->applicant->creativeProfile;
 
             if (!$creative) {
                 return [
@@ -91,7 +92,9 @@ class ApplicationRankingService
             $jobText .= ' ' . implode(' ', $job->skills);
         }
 
-        return $this->vectorizer->embed($jobText);
+        $result = $this->vectorizer->embed($jobText);
+
+        return $result;
     }
 
     private function calculateApplicationScore(array $jobVector, CreativeProfile $creative, Application $application): array
