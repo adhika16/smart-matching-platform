@@ -8,7 +8,8 @@ import {
     ExternalLink,
     CheckCircle,
     Clock,
-    Users
+    Users,
+    Briefcase
 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +26,7 @@ interface Job {
     description?: string | null;
     location?: string | null;
     is_remote: boolean;
+    compensation_type?: string | null;
     tags?: string[] | null;
     skills?: string[] | null;
     category?: string | null;
@@ -92,6 +94,20 @@ export default function JobShow({ job, hasApplied }: JobShowProps) {
     const formatDate = (dateString?: string | null) => {
         if (!dateString) return null;
         return new Date(dateString).toLocaleDateString();
+    };
+
+    const formatCompensationType = (type?: string | null) => {
+        if (!type) return null;
+        switch (type) {
+            case 'project':
+                return 'Project-based';
+            case 'hourly':
+                return 'Hourly Rate';
+            case 'salary':
+                return 'Monthly Salary';
+            default:
+                return type;
+        }
     };
 
     return (
@@ -246,6 +262,15 @@ export default function JobShow({ job, hasApplied }: JobShowProps) {
                                 <CardTitle>Job Details</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                                {job.compensation_type && (
+                                    <div className="flex items-center gap-2">
+                                        <Briefcase className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-sm">
+                                            {formatCompensationType(job.compensation_type)}
+                                        </span>
+                                    </div>
+                                )}
+
                                 {formatBudget(job.budget_min, job.budget_max) && (
                                     <div className="flex items-center gap-2">
                                         <DollarSign className="h-4 w-4 text-muted-foreground" />

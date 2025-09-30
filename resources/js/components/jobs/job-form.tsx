@@ -22,8 +22,6 @@ export interface JobFormValues {
     is_remote?: boolean;
     status?: string;
     compensation_type?: string | null;
-    compensation_min?: string | number | null;
-    compensation_max?: string | number | null;
     skills?: string[] | null;
     category?: string | null;
     timeline_start?: string | null;
@@ -271,33 +269,8 @@ export default function JobForm({
                             <InputError message={errors.compensation_type} />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="compensation_min">Min compensation</Label>
-                                <Input
-                                    id="compensation_min"
-                                    name="compensation_min"
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    defaultValue={job?.compensation_min ?? ''}
-                                    placeholder="e.g., 75000"
-                                />
-                                <InputError message={errors.compensation_min} />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="compensation_max">Max compensation</Label>
-                                <Input
-                                    id="compensation_max"
-                                    name="compensation_max"
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    defaultValue={job?.compensation_max ?? ''}
-                                    placeholder="e.g., 95000"
-                                />
-                                <InputError message={errors.compensation_max} />
-                            </div>
+                        <div className="grid gap-2">
+                            {/* Empty grid item for layout balance */}
                         </div>
                     </section>
 
@@ -328,30 +301,30 @@ export default function JobForm({
 
                     <section className="grid gap-6 md:grid-cols-2">
                         <div className="grid gap-2">
-                            <Label htmlFor="budget_min">Budget min (Rp)</Label>
+                            <Label htmlFor="budget_min">Compensation min (Rp)</Label>
                             <Input
                                 id="budget_min"
                                 name="budget_min"
                                 type="number"
-                                step="0.01"
+                                step="1000"
                                 min="0"
                                 value={budgetMin}
                                 onChange={(event) => setBudgetMin(event.target.value)}
-                                placeholder="5000"
+                                placeholder="5000000"
                             />
                             <InputError message={errors.budget_min} />
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="budget_max">Budget max (Rp)</Label>
+                            <Label htmlFor="budget_max">Compensation max (Rp)</Label>
                             <Input
                                 id="budget_max"
                                 name="budget_max"
                                 type="number"
-                                step="0.01"
+                                step="1000"
                                 min="0"
                                 value={budgetMax}
                                 onChange={(event) => setBudgetMax(event.target.value)}
-                                placeholder="20000"
+                                placeholder="15000000"
                             />
                             <InputError message={errors.budget_max} />
                         </div>

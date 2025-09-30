@@ -74,8 +74,6 @@ class JobController extends Controller
             'is_remote' => $data['is_remote'] ?? false,
             'status' => $status,
             'compensation_type' => $data['compensation_type'] ?? null,
-            'compensation_min' => $data['compensation_min'] ?? null,
-            'compensation_max' => $data['compensation_max'] ?? null,
             'tags' => $data['tags'] ?? null,
             'skills' => $data['skills'] ?? null,
             'category' => $data['category'] ?? null,
@@ -177,8 +175,6 @@ class JobController extends Controller
                 'is_remote' => $job->is_remote,
                 'status' => $job->status,
                 'compensation_type' => $job->compensation_type,
-                'compensation_min' => $job->compensation_min,
-                'compensation_max' => $job->compensation_max,
                 'tags' => $job->tags,
                 'skills' => $job->skills,
                 'category' => $job->category,
@@ -222,8 +218,6 @@ class JobController extends Controller
             'is_remote' => $data['is_remote'] ?? false,
             'status' => $status ?? $job->status,
             'compensation_type' => $data['compensation_type'] ?? null,
-            'compensation_min' => $data['compensation_min'] ?? null,
-            'compensation_max' => $data['compensation_max'] ?? null,
             'tags' => $data['tags'] ?? null,
             'skills' => $data['skills'] ?? null,
             'category' => $data['category'] ?? null,
@@ -322,8 +316,6 @@ class JobController extends Controller
             'location' => ['nullable', 'string', 'max:255'],
             'is_remote' => ['nullable', 'boolean'],
             'compensation_type' => ['nullable', 'in:hourly,project,salary'],
-            'compensation_min' => ['nullable', 'numeric', 'min:0'],
-            'compensation_max' => ['nullable', 'numeric', 'min:0'],
             'skills' => $skillRule,
             'skills.*' => count($skillValues) > 0
                 ? ['string', Rule::in($skillValues)]
@@ -334,13 +326,6 @@ class JobController extends Controller
             'budget_min' => ['nullable', 'numeric', 'min:0'],
             'budget_max' => ['nullable', 'numeric', 'min:0'],
         ]);
-
-        if (! empty($data['compensation_min']) && ! empty($data['compensation_max'])
-            && $data['compensation_min'] > $data['compensation_max']) {
-            throw ValidationException::withMessages([
-                'compensation_max' => 'Maximum compensation must be greater than or equal to minimum compensation.',
-            ]);
-        }
 
         if (! empty($data['budget_min']) && ! empty($data['budget_max'])
             && $data['budget_min'] > $data['budget_max']) {
@@ -428,19 +413,6 @@ class JobController extends Controller
     }
 
     /**
-     * Get structured taxonomy options for the job form.
-     *
-     * @return array{skills: array<int, array{value: string, label: string}>, categories: array<int, array{value: string, label: string}>}
-     */
-    protected function taxonomy(): array
-    {
-        return [
-            'skills' => config('taxonomy.skills', []),
-            'categories' => config('taxonomy.categories', []),
-        ];
-    }
-
-    /**
      * Get available compensation types.
      *
      * @return array<int, array{value: string, label: string}>
@@ -451,6 +423,19 @@ class JobController extends Controller
             ['value' => 'hourly', 'label' => 'Hourly'],
             ['value' => 'project', 'label' => 'Per Project'],
             ['value' => 'salary', 'label' => 'Salary'],
+        ];
+    }
+
+    /**
+     * Get structured taxonomy options for the job form.
+     *
+     * @return array{skills: array<int, array{value: string, label: string}>, categories: array<int, array{value: string, label: string}>}
+     */
+    protected function taxonomy(): array
+    {
+        return [
+            'skills' => config('taxonomy.skills', []),
+            'categories' => config('taxonomy.categories', []),
         ];
     }
 }

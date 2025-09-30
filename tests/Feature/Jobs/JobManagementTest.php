@@ -37,8 +37,8 @@ test('verified opportunity owner can create and publish a job', function () {
             'location' => 'Remote',
             'is_remote' => true,
             'compensation_type' => 'salary',
-            'compensation_min' => 80000,
-            'compensation_max' => 120000,
+            'budget_min' => 80000,
+            'budget_max' => 120000,
             'tags' => 'design,product,ux',
             'status' => 'published',
         ])
