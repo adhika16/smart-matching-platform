@@ -48,7 +48,7 @@ export default function CreativeProfileForm({ profile }: CreativeProfileFormProp
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="hourly_rate">Hourly Rate ($)</Label>
+                                <Label htmlFor="hourly_rate">Hourly Rate (Rp)</Label>
                                 <Input
                                     id="hourly_rate"
                                     name="hourly_rate"

@@ -196,7 +196,7 @@ class JobController extends Controller
             ],
             'compensationTypes' => $this->compensationTypes(),
             'taxonomy' => $this->taxonomy(),
-            'applications' => $rankedApplications,
+            'applications' => $rankedApplications->toArray(),
             'hasSmartRanking' => $hasSmartRanking,
             'applicationStatuses' => [
                 ['value' => Application::STATUS_PENDING, 'label' => 'Pending review'],

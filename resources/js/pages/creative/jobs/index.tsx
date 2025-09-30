@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Search, MapPin, BadgeCheck, ArrowRight, Sparkles } from 'lucide-react';
+import { Search, MapPin, BadgeCheck, ArrowRight, Sparkles, ChevronDown, ChevronUp, Filter } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -79,8 +79,10 @@ export default function BrowseJobs({ jobs: initialJobs, filters, auth }: PagePro
     const [isSmartSearch, setIsSmartSearch] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [searchMeta, setSearchMeta] = useState<SmartSearchResult['meta'] | null>(null);
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
     const hasProfile = Boolean(auth.user.creativeProfile);
+    const hasActiveFilters = formData.location || formData.tag || formData.remote;
 
     const handleSubmit = async (event: FormEvent) => {
         event.preventDefault();
@@ -147,6 +149,7 @@ export default function BrowseJobs({ jobs: initialJobs, filters, auth }: PagePro
         });
         setIsSmartSearch(false);
         setSearchMeta(null);
+        setShowAdvancedFilters(false);
         router.get('/creative/jobs');
     };
 
@@ -186,84 +189,129 @@ export default function BrowseJobs({ jobs: initialJobs, filters, auth }: PagePro
                 </div>
 
                 <Card>
-                    <form className="grid gap-4 border-b p-6 md:grid-cols-4" onSubmit={handleSubmit}>
-                        <div className="md:col-span-2">
-                            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                Keywords
-                            </label>
-                            <div className="relative mt-1">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    name="search"
-                                    value={formData.search}
-                                    onChange={(event) => setFormData((prev) => ({ ...prev, search: event.target.value }))}
-                                    placeholder={hasProfile ? "Search jobs that match your skills..." : "Search title, summary or description"}
-                                    className="pl-9"
-                                    disabled={isLoading}
-                                />
+                    <form onSubmit={handleSubmit}>
+                        {/* Main Search Bar */}
+                        <div className="p-6 border-b">
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                        Search for Opportunities
+                                    </label>
+                                    <div className="flex gap-3 mt-1">
+                                        <div className="relative flex-1">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <Input
+                                                name="search"
+                                                value={formData.search}
+                                                onChange={(event) => setFormData((prev) => ({ ...prev, search: event.target.value }))}
+                                                placeholder={hasProfile ? "Search jobs that match your skills..." : "Search title, summary or description"}
+                                                className="pl-9"
+                                                disabled={isLoading}
+                                            />
+                                        </div>
+                                        <Button type="submit" disabled={isLoading}>
+                                            {isLoading ? (
+                                                <>
+                                                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                                    Searching...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Search className="mr-2 h-4 w-4" />
+                                                    {formData.search ? 'Smart Search' : 'Search'}
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+                                    {hasProfile && (
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            <Sparkles className="h-3 w-3 inline mr-1" />
+                                            AI will find jobs that match your profile and skills
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="flex justify-start">
+                                    <Button
+                                        type="button"
+                                        variant={hasActiveFilters ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Filter className="h-3 w-3" />
+                                        Advanced Filters
+                                        {hasActiveFilters && (
+                                            <Badge variant="secondary" className="ml-1 text-xs px-1 py-0 h-4 min-w-4">
+                                                {[formData.location, formData.tag, formData.remote].filter(Boolean).length}
+                                            </Badge>
+                                        )}
+                                        {showAdvancedFilters ? (
+                                            <ChevronUp className="h-3 w-3" />
+                                        ) : (
+                                            <ChevronDown className="h-3 w-3" />
+                                        )}
+                                    </Button>
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                Location
-                            </label>
-                            <div className="relative mt-1">
-                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    name="location"
-                                    value={formData.location}
-                                    onChange={(event) => setFormData((prev) => ({ ...prev, location: event.target.value }))}
-                                    placeholder="City or region"
-                                    className="pl-9"
-                                    disabled={isLoading}
-                                />
+
+                        {/* Advanced Filters - Expandable Section */}
+                        {showAdvancedFilters && (
+                            <div className="p-6 bg-muted/20 border-b">
+                                <div className="grid gap-4 md:grid-cols-3">
+                                    <div>
+                                        <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                            Location
+                                        </label>
+                                        <div className="relative mt-1">
+                                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <Input
+                                                name="location"
+                                                value={formData.location}
+                                                onChange={(event) => setFormData((prev) => ({ ...prev, location: event.target.value }))}
+                                                placeholder="City or region"
+                                                className="pl-9"
+                                                disabled={isLoading}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                            Category
+                                        </label>
+                                        <Input
+                                            name="tag"
+                                            value={formData.tag}
+                                            onChange={(event) => setFormData((prev) => ({ ...prev, tag: event.target.value }))}
+                                            placeholder="e.g. design, development"
+                                            className="mt-1"
+                                            disabled={isLoading}
+                                        />
+                                    </div>
+                                    <div className="flex items-end">
+                                        <div className="flex items-center gap-2 pb-2">
+                                            <Checkbox
+                                                id="remote"
+                                                name="remote"
+                                                checked={formData.remote}
+                                                onCheckedChange={(checked) =>
+                                                    setFormData((prev) => ({ ...prev, remote: checked === true }))
+                                                }
+                                                disabled={isLoading}
+                                            />
+                                            <label htmlFor="remote" className="text-sm text-muted-foreground">
+                                                Remote only
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="mt-4 flex gap-2">
+                                    <Button type="button" variant="ghost" onClick={clearFilters} disabled={isLoading}>
+                                        Clear all filters
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
-                        <div>
-                            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                Category
-                            </label>
-                            <Input
-                                name="tag"
-                                value={formData.tag}
-                                onChange={(event) => setFormData((prev) => ({ ...prev, tag: event.target.value }))}
-                                placeholder="e.g. design, development"
-                                className="mt-1"
-                                disabled={isLoading}
-                            />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Checkbox
-                                id="remote"
-                                name="remote"
-                                checked={formData.remote}
-                                onCheckedChange={(checked) =>
-                                    setFormData((prev) => ({ ...prev, remote: checked === true }))
-                                }
-                                disabled={isLoading}
-                            />
-                            <label htmlFor="remote" className="text-sm text-muted-foreground">
-                                Remote only
-                            </label>
-                        </div>
-                        <div className="md:col-span-4 flex flex-wrap gap-2">
-                            <Button type="submit" disabled={isLoading}>
-                                {isLoading ? (
-                                    <>
-                                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                        Searching...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Search className="mr-2 h-4 w-4" />
-                                        {formData.search ? 'Smart Search' : 'Search'}
-                                    </>
-                                )}
-                            </Button>
-                            <Button type="button" variant="ghost" onClick={clearFilters} disabled={isLoading}>
-                                Clear filters
-                            </Button>
-                        </div>
+                        )}
                     </form>
 
                     {isSmartSearch && searchMeta && (

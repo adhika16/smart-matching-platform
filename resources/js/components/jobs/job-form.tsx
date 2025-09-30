@@ -328,7 +328,7 @@ export default function JobForm({
 
                     <section className="grid gap-6 md:grid-cols-2">
                         <div className="grid gap-2">
-                            <Label htmlFor="budget_min">Budget min (USD)</Label>
+                            <Label htmlFor="budget_min">Budget min (Rp)</Label>
                             <Input
                                 id="budget_min"
                                 name="budget_min"
@@ -342,7 +342,7 @@ export default function JobForm({
                             <InputError message={errors.budget_min} />
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="budget_max">Budget max (USD)</Label>
+                            <Label htmlFor="budget_max">Budget max (Rp)</Label>
                             <Input
                                 id="budget_max"
                                 name="budget_max"

@@ -83,9 +83,9 @@ export default function JobShow({ job, hasApplied }: JobShowProps) {
 
     const formatBudget = (min?: number | null, max?: number | null) => {
         if (!min && !max) return null;
-        if (min && max) return `$${min.toLocaleString()} - $${max.toLocaleString()}`;
-        if (min) return `From $${min.toLocaleString()}`;
-        if (max) return `Up to $${max.toLocaleString()}`;
+        if (min && max) return `Rp${min.toLocaleString()} - Rp${max.toLocaleString()}`;
+        if (min) return `From Rp${min.toLocaleString()}`;
+        if (max) return `Up to Rp${max.toLocaleString()}`;
         return null;
     };
 

@@ -76,6 +76,9 @@ export default function EditJob({ job, compensationTypes, applications, hasSmart
         rejected: 'secondary',
     };
 
+    // Ensure applications is always an array
+    const safeApplications = Array.isArray(applications) ? applications : [];
+
     return (
         <AppLayout>
             <Head title={`Edit job · ${job.title}`} />
@@ -155,17 +158,17 @@ export default function EditJob({ job, compensationTypes, applications, hasSmart
                         <CardTitle className="flex items-center justify-between gap-4">
                             <div className="flex items-center gap-2">
                                 <span>Applications</span>
-                                {hasSmartRanking && applications.length > 0 && (
+                                {hasSmartRanking && safeApplications.length > 0 && (
                                     <Badge variant="default" className="bg-primary/10 text-primary border-primary/20 text-xs">
                                         AI Ranked
                                     </Badge>
                                 )}
                             </div>
-                            <Badge variant="outline">{applications.length}</Badge>
+                            <Badge variant="outline">{safeApplications.length}</Badge>
                         </CardTitle>
                         <p className="text-sm text-muted-foreground">
                             Review and update the status of creatives who have applied to this opportunity.
-                            {hasSmartRanking && applications.length > 0 && (
+                            {hasSmartRanking && safeApplications.length > 0 && (
                                 <span className="block mt-1 text-primary">
                                     Applications are ranked by AI matching score for better decision making.
                                 </span>
@@ -173,12 +176,12 @@ export default function EditJob({ job, compensationTypes, applications, hasSmart
                         </p>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {applications.length === 0 ? (
+                        {safeApplications.length === 0 ? (
                             <p className="text-sm text-muted-foreground">
-                                You haven’t received any applications yet. Once creatives apply, they’ll appear here.
+                                You haven't received any applications yet. Once creatives apply, they'll appear here.
                             </p>
                         ) : (
-                            applications.map((application) => (
+                            safeApplications.map((application) => (
                                 <div
                                     key={application.id}
                                     className="rounded-md border p-4"
