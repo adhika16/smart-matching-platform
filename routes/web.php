@@ -57,10 +57,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Search API endpoints (moved from api.php for proper session auth)
     Route::prefix('api')->name('api.')->group(function () {
         Route::get('search/personalized', SemanticSearchController::class)
+            ->middleware('throttle:20,1')
             ->name('search.personalized');
 
         Route::middleware('user.type:opportunity_owner')
             ->get('search/creatives', CreativeSearchController::class)
+            ->middleware('throttle:20,1')
             ->name('search.creatives');
 
         Route::middleware('user.type:opportunity_owner')
@@ -77,6 +79,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'limit' => 10,
                 ]));
             })
+            ->middleware('throttle:10,1')
             ->name('jobs.recommendations');
     });
 
