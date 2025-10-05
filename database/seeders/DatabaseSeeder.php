@@ -21,20 +21,6 @@ class DatabaseSeeder extends Seeder
         $scoutEnabled = config('scout.driver');
         config(['scout.driver' => null]);
 
-        // Admin user
-        $admin = User::firstOrCreate(
-            ['email' => 'admin@example.com'],
-            [
-                'name' => 'Admin User',
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-                'user_type' => 'creative',
-                'is_admin' => true,
-                'profile_completed_at' => now(),
-                'profile_completion_score' => 100,
-            ]
-        );
-
         // Creative professionals data
         $creatives = [
             // Film & Animation
@@ -80,7 +66,7 @@ class DatabaseSeeder extends Seeder
                 [
                     'name' => $creative['name'],
                     'password' => Hash::make('password'),
-                    'email_verified_at' => now(),
+                    'email_verified_at' => null,
                     'user_type' => 'creative',
                     'is_admin' => false,
                     'profile_completed_at' => now(),
@@ -124,7 +110,7 @@ class DatabaseSeeder extends Seeder
                 [
                     'name' => $company['name'],
                     'password' => Hash::make('password'),
-                    'email_verified_at' => now(),
+                    'email_verified_at' => null,
                     'user_type' => 'opportunity_owner',
                     'is_admin' => false,
                     'profile_completed_at' => now(),

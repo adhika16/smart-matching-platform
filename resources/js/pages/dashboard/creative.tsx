@@ -7,6 +7,8 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
 import creativeRoutes from '@/routes/creative';
+import EmailVerificationNotificationController from '@/actions/App/Http/Controllers/Auth/EmailVerificationNotificationController';
+import { Form } from '@inertiajs/react';
 
 interface CreativeProps {
     user: {
@@ -14,6 +16,7 @@ interface CreativeProps {
         email: string;
         user_type: 'creative';
         profile_completion_score: number;
+        email_verified_at?: string | null;
     };
     profile?: {
         bio?: string;
@@ -75,6 +78,37 @@ export default function Creative({
                         Manage your creative profile and find new opportunities
                     </p>
                 </div>
+
+                {!user.email_verified_at && (
+                    <Card className="mb-6 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                    <div className="flex-shrink-0">
+                                        <svg className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                                            Email Verification Required
+                                        </h3>
+                                        <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                                            Please verify your email address to unlock full access to semantic search and smart matching features.
+                                        </p>
+                                    </div>
+                                </div>
+                                <Form {...EmailVerificationNotificationController.store.form()}>
+                                    {({ processing }) => (
+                                        <Button type="submit" disabled={processing} size="sm" variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-600 dark:text-amber-300 dark:hover:bg-amber-900">
+                                            Resend Verification Email
+                                        </Button>
+                                    )}
+                                </Form>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
                     <Card>
