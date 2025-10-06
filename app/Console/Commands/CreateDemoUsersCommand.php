@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\OpportunityOwnerProfile;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
@@ -72,7 +73,7 @@ class CreateDemoUsersCommand extends Command
         $ownerEmail = 'owner@example.com';
         if (!User::where('email', $ownerEmail)->exists()) {
             $ownerPassword = Str::random(12);
-            User::create([
+            $owner = User::create([
                 'name' => 'Demo Opportunity Owner',
                 'email' => $ownerEmail,
                 'password' => Hash::make($ownerPassword),
@@ -80,7 +81,15 @@ class CreateDemoUsersCommand extends Command
                 'is_admin' => false,
                 'email_verified_at' => now(),
             ]);
-            $this->info("✅ Opportunity Owner user created:");
+
+            OpportunityOwnerProfile::create([
+                'user_id' => $owner->id,
+                'company_name' => 'Demo Company',
+                'is_verified' => true,
+                'verified_at' => now(),
+            ]);
+
+            $this->info("✅ Opportunity Owner user created and verified:");
             $this->info("   Email: {$ownerEmail}");
             $this->info("   Password: {$ownerPassword}");
         } else {

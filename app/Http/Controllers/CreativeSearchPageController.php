@@ -19,7 +19,7 @@ class CreativeSearchPageController extends Controller
         }
 
         // Get user's jobs for context dropdown
-        $jobs = Job::where('opportunity_owner_id', $user->opportunityOwnerProfile->id ?? null)
+        $jobs = Job::where('user_id', $user->id)
             ->where('status', 'published')
             ->select('id', 'title')
             ->orderBy('created_at', 'desc')
