@@ -21,7 +21,7 @@ return new class extends Migration
             $table->json('metadata')->nullable();
             $table->timestamps();
 
-            $table->foreign('opportunity_owner_profile_id')->references('id')->on('opportunity_owner_profiles')->onDelete('cascade');
+            $table->foreign('opportunity_owner_profile_id', 'verification_logs_owner_profile_fk')->references('id')->on('opportunity_owner_profiles')->onDelete('cascade');
             $table->index(['opportunity_owner_profile_id', 'created_at']);
         });
     }
