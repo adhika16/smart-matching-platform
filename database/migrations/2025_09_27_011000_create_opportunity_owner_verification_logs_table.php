@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('opportunity_owner_verification_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('opportunity_owner_profile_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('opportunity_owner_profile_id');
             $table->foreignId('actor_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('actor_role');
             $table->string('action');
@@ -21,6 +21,7 @@ return new class extends Migration
             $table->json('metadata')->nullable();
             $table->timestamps();
 
+            $table->foreign('opportunity_owner_profile_id')->references('id')->on('opportunity_owner_profiles')->onDelete('cascade');
             $table->index(['opportunity_owner_profile_id', 'created_at']);
         });
     }
