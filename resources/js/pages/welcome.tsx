@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Users, Search, Zap, ArrowRight, TrendingUp, UserCheck, Github, Mail, ExternalLink } from 'lucide-react';
 import { login, register } from '@/routes';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 interface HomeProps {
     laravelVersion: string;
@@ -30,6 +31,7 @@ export default function Welcome({ laravelVersion, phpVersion }: HomeProps) {
                             <Button asChild>
                                 <a href={register().url}>Get Started</a>
                             </Button>
+                            <ThemeToggle />
                         </div>
                     </div>
                 </nav>

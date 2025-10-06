@@ -7,7 +7,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use Laravel\Fortify\Contracts\VerifyEmailViewResponse;
 
 class EmailVerificationPromptController extends Controller
 {
@@ -18,6 +17,6 @@ class EmailVerificationPromptController extends Controller
     {
         return $request->user()->hasVerifiedEmail()
                     ? redirect()->intended(route('dashboard', absolute: false))
-                    : app(VerifyEmailViewResponse::class, ['status' => $request->session()->get('status')]);
+                    : Inertia::render('auth/verify-email', ['status' => $request->session()->get('status')]);
     }
 }
